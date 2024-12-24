@@ -1,0 +1,20 @@
+[package]
+name = "tempesta"
+version = "0.0.0"
+authors = ["Andrea Reni <mail@x71c9.com>"]
+edition = "2021"
+description = "The lightest and fastest CLI for managing bookmarks, written in Rust"
+repository = "https://github.com/x71c9/tempesta"
+license = "UNLICENSED"
+
+[dependencies]
+serde = { version = "1.0", features = ["derive"] }
+dirs = "4.0"
+webbrowser = "0.8"
+toml = "0.7"
+regex = "1"
+
+[package.metadata.release]
+push = true
+publish = true
+tag-message = "Release {{version}}"
