@@ -17,4 +17,4 @@ regex = "1"
 [package.metadata.release]
 push = true
 publish = true
-tag-message = "Release {{version}}"
+tag-message = "chore(release): v{{version}}"
