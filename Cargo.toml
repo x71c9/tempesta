@@ -1,6 +1,6 @@
 [package]
 name = "tempesta"
-version = "0.0.1"
+version = "0.0.2"
 authors = ["Andrea Reni <mail@x71c9.com>"]
 edition = "2021"
 description = "The lightest and fastest CLI for managing bookmarks, written in Rust"
@@ -18,3 +18,5 @@ regex = "1"
 push = true
 publish = true
 tag-message = "chore(release): v{{version}}"
+pre-release-commit-message = "chore(release): release v{{version}}"
+
