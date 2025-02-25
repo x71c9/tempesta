@@ -9,10 +9,9 @@ permissions:
   contents: write  # Required to create a GitHub Release
 
 jobs:
-  build:
-    name: Build Rust binaries
+  build-macos:
+    name: Build macOS Binaries
     runs-on: macos-latest
-
     strategy:
       matrix:
         target: [aarch64-apple-darwin, x86_64-apple-darwin]
@@ -42,9 +41,70 @@ jobs:
           name: tempesta-${{ matrix.target }}
           path: bin/tempesta-${{ matrix.target }}.tar.gz
 
+  build-linux:
+    name: Build Arch Linux Package
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Add target
+        run: rustup target add x86_64-unknown-linux-gnu
+
+      - name: Install Dependencies
+        run: |
+          sudo apt update
+          sudo apt install -y musl-tools archlinux-keyring pacman
+
+      - name: Build binary
+        run: cargo build --release --target x86_64-unknown-linux-gnu
+
+      - name: Create Arch Linux Package
+        run: |
+          mkdir -p bin
+          cp target/x86_64-unknown-linux-gnu/release/tempesta bin/tempesta
+          chmod +x bin/tempesta
+
+          mkdir -p pacman_pkg
+          cd bin
+          tar -czvf ../pacman_pkg/tempesta.tar.gz tempesta
+          cd ../pacman_pkg
+
+          # Create PKGBUILD
+          cat <<EOF > PKGBUILD
+          pkgname=tempesta
+          pkgver=${{ github.ref_name }}
+          pkgrel=1
+          pkgdesc="A CLI application written in Rust"
+          arch=('x86_64')
+          url="https://github.com/x71c9/tempesta"
+          license=('MIT')
+          depends=('glibc')
+          makedepends=('cargo')
+          source=("https://github.com/x71c9/tempesta/releases/download/v${{ github.ref_name }}/tempesta-x86_64-unknown-linux-gnu.tar.gz")
+          sha256sums=('SKIP')
+          package() {
+            install -Dm755 tempesta "\$pkgdir/usr/bin/tempesta"
+          }
+          EOF
+
+          makepkg --printsrcinfo > .SRCINFO
+          makepkg -cf
+          mv *.pkg.tar.zst ../bin/
+
+      - name: Upload Linux Package as Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: tempesta-linux
+          path: bin/tempesta-*.pkg.tar.zst
+
   release:
     name: Create GitHub Release
-    needs: build
+    needs: [build-macos, build-linux]
     runs-on: ubuntu-latest
 
     steps:
@@ -61,6 +121,11 @@ jobs:
         with:
           name: tempesta-x86_64-apple-darwin
           path: bin
+      - name: Download Linux artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: tempesta-linux
+          path: bin
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
@@ -76,4 +141,45 @@ jobs:
                -H "Authorization: token ${{ secrets.HOMEBREW_PAT }}" \
                https://api.github.com/repos/x71c9/homebrew-x71c9/dispatches \
                -d '{"event_type": "update-homebrew", "client_payload": {"tag": "${{ github.ref_name }}"}}'
+
+  update-aur:
+    name: Update AUR
+    needs: release
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout AUR Repository
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.AUR_SSH_PRIVATE_KEY }}" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          ssh-keyscan -t ed25519 aur.archlinux.org >> ~/.ssh/known_hosts
+          git clone ssh://aur@aur.archlinux.org/tempesta.git aur-tempesta
+          cd aur-tempesta
+
+      - name: Update PKGBUILD and Push to AUR
+        run: |
+          cd aur-tempesta
+          cat <<EOF > PKGBUILD
+          pkgname=tempesta
+          pkgver=${{ github.ref_name }}
+          pkgrel=1
+          pkgdesc="A CLI application written in Rust"
+          arch=('x86_64')
+          url="https://github.com/x71c9/tempesta"
+          license=('MIT')
+          depends=('glibc')
+          makedepends=('cargo')
+          source=("https://github.com/x71c9/tempesta/releases/download/v${{ github.ref_name }}/tempesta-x86_64-unknown-linux-gnu.tar.gz")
+          sha256sums=('SKIP')
+          package() {
+            install -Dm755 tempesta "\$pkgdir/usr/bin/tempesta"
+          }
+          EOF
+
+          makepkg --printsrcinfo > .SRCINFO
+
+          git add PKGBUILD .SRCINFO
+          git commit -m "Update to version ${{ github.ref_name }}"
+          git push origin master
 
