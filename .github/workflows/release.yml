@@ -66,9 +66,11 @@ jobs:
 
       - name: Install Rust
         run: |
+          pacman -S --noconfirm rustup
           sudo -u aurbuilder bash -c "
-          pacman -S --noconfirm rustup;
-          rustup default stable;
+          export HOME=/home/aurbuilder
+          rustup-init -y --default-toolchain stable;
+          source /home/aurbuilder/.cargo/env;
           rustup target add x86_64-unknown-linux-gnu
           "
 
