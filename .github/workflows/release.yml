@@ -88,6 +88,8 @@ jobs:
       - name: Create Arch Linux Package
         run: |
           sudo -u aurbuilder bash -c "
+          export HOME=/home/aurbuilder
+          export VERSION=${GITHUB_REF_NAME#v}  # Remove 'v' prefix
           cd /home/aurbuilder/build/tempesta;
           mkdir -p pacman_pkg;
           cd bin;
@@ -95,10 +97,9 @@ jobs:
           cd ../pacman_pkg;
 
           # Create PKGBUILD
-          version=${GITHUB_REF_NAME#v}  # Remove 'v' prefix
           cat <<EOF > PKGBUILD
           pkgname=tempesta
-          pkgver=$version
+          pkgver=\$VERSION
           pkgrel=1
           pkgdesc='A CLI application written in Rust'
           arch=('x86_64')
@@ -110,7 +111,7 @@ jobs:
           sha256sums=('SKIP')
 
           package() {
-            install -Dm755 tempesta "\$pkgdir/usr/bin/tempesta"
+            install -Dm755 tempesta \"\$pkgdir/usr/bin/tempesta\"
           }
           EOF
 
