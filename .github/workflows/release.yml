@@ -5,6 +5,9 @@ on:
     tags:
       - "v*.*.*"
 
+permissions:
+  contents: write  # This is required to create a release
+
 jobs:
   build:
     name: Build Rust binaries
