@@ -44,31 +44,31 @@ jobs:
   build-linux:
     name: Build Arch Linux Package
     runs-on: ubuntu-latest
+    container: archlinux:latest
 
     steps:
+      - name: Install dependencies (inside Arch container)
+        run: |
+          pacman -Syu --noconfirm base-devel
+
       - name: Checkout repository
         uses: actions/checkout@v4
 
       - name: Install Rust
-        uses: dtolnay/rust-toolchain@stable
-
-      - name: Add target
-        run: rustup target add x86_64-unknown-linux-gnu
-
-      - name: Install Dependencies
         run: |
-          sudo apt update
-          sudo apt install -y musl-tools archlinux-keyring pacman
+          pacman -S --noconfirm rustup
+          rustup default stable
+          rustup target add x86_64-unknown-linux-gnu
 
       - name: Build binary
-        run: cargo build --release --target x86_64-unknown-linux-gnu
-
-      - name: Create Arch Linux Package
         run: |
+          cargo build --release --target x86_64-unknown-linux-gnu
           mkdir -p bin
           cp target/x86_64-unknown-linux-gnu/release/tempesta bin/tempesta
           chmod +x bin/tempesta
 
+      - name: Create Arch Linux Package
+        run: |
           mkdir -p pacman_pkg
           cd bin
           tar -czvf ../pacman_pkg/tempesta.tar.gz tempesta
