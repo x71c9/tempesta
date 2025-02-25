@@ -110,9 +110,12 @@ jobs:
           source=('tempesta.tar.gz')
           sha256sums=('SKIP')
 
+          build() {
+            tar -xzf tempesta.tar.gz
+          }
+
           package() {
-            mkdir -p "\$pkgdir/usr/bin"
-            install -Dm755 tempesta "\$pkgdir/usr/bin/tempesta"
+            install -Dm755 tempesta \"\${pkgdir}/usr/bin/tempesta\"
           }
           EOF
 
