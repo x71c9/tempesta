@@ -33,8 +33,8 @@ jobs:
       - name: Rename and compress binary
         run: |
           mkdir -p bin
-          cp target/${{ matrix.target }}/release/tempesta bin/tempesta-${{ matrix.target }}
-          tar -czvf bin/tempesta-${{ matrix.target }}.tar.gz -C bin tempesta-${{ matrix.target }}
+          cp target/${{ matrix.target }}/release/tempesta bin/tempesta
+          tar -czvf bin/tempesta-${{ matrix.target }}.tar.gz -C bin tempesta
 
       - name: Upload binary as artifact
         uses: actions/upload-artifact@v4
