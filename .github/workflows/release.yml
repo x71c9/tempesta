@@ -60,7 +60,8 @@ jobs:
 
       - name: Move repository to aurbuilder's home
         run: |
-          mv /__w/tempesta/tempesta /home/aurbuilder/build/tempesta
+          mkdir -p /home/aurbuilder/build/tempesta
+          cp -r . /home/aurbuilder/build/tempesta
           chown -R aurbuilder /home/aurbuilder/build/tempesta
 
       - name: Install Rust
@@ -91,9 +92,10 @@ jobs:
           cd ../pacman_pkg;
 
           # Create PKGBUILD
+          version=${GITHUB_REF_NAME#v}  # Remove 'v' prefix
           cat <<EOF > PKGBUILD
           pkgname=tempesta
-          pkgver=${{ github.ref_name }}
+          pkgver=$version
           pkgrel=1
           pkgdesc='A CLI application written in Rust'
           arch=('x86_64')
@@ -118,7 +120,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: tempesta-linux
-          path: /home/aurbuilder/build/tempesta/bin/tempesta-*.pkg.tar.zst
+          path: /home/aurbuilder/build/tempesta/bin/*.pkg.tar.zst
 
   release:
     name: Create GitHub Release
@@ -129,16 +131,18 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Download artifacts
+      - name: Download macOS artifacts
         uses: actions/download-artifact@v4
         with:
           name: tempesta-aarch64-apple-darwin
           path: bin
-      - name: Download artifacts
+
+      - name: Download macOS artifacts
         uses: actions/download-artifact@v4
         with:
           name: tempesta-x86_64-apple-darwin
           path: bin
+
       - name: Download Linux artifacts
         uses: actions/download-artifact@v4
         with:
@@ -178,9 +182,11 @@ jobs:
       - name: Update PKGBUILD and Push to AUR
         run: |
           cd aur-tempesta
+          version=${GITHUB_REF_NAME#v}  # Remove 'v' prefix
+
           cat <<EOF > PKGBUILD
           pkgname=tempesta
-          pkgver=${{ github.ref_name }}
+          pkgver=$version
           pkgrel=1
           pkgdesc="A CLI application written in Rust"
           arch=('x86_64')
@@ -188,8 +194,9 @@ jobs:
           license=('MIT')
           depends=('glibc')
           makedepends=('cargo')
-          source=("https://github.com/x71c9/tempesta/releases/download/v${{ github.ref_name }}/tempesta-x86_64-unknown-linux-gnu.tar.gz")
+          source=("https://github.com/x71c9/tempesta/releases/download/${version}/tempesta-x86_64-unknown-linux-gnu.tar.gz")
           sha256sums=('SKIP')
+
           package() {
             install -Dm755 tempesta "\$pkgdir/usr/bin/tempesta"
           }
@@ -198,6 +205,6 @@ jobs:
           makepkg --printsrcinfo > .SRCINFO
 
           git add PKGBUILD .SRCINFO
-          git commit -m "Update to version ${{ github.ref_name }}"
+          git commit -m "Update to version $version"
           git push origin master
 
