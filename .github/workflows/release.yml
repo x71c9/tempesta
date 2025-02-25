@@ -56,9 +56,12 @@ jobs:
           chown -R aurbuilder /home/aurbuilder
 
       - name: Checkout repository
-        uses: actions/checkout@v4
-        with:
-          path: /home/aurbuilder/build/tempesta
+        uses: actions/checkout@v4  # Keep the repository in the default workspace
+
+      - name: Move repository to aurbuilder's home
+        run: |
+          mv /__w/tempesta/tempesta /home/aurbuilder/build/tempesta
+          chown -R aurbuilder /home/aurbuilder/build/tempesta
 
       - name: Install Rust
         run: |
