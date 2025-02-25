@@ -111,7 +111,8 @@ jobs:
           sha256sums=('SKIP')
 
           package() {
-            install -Dm755 tempesta \"\$pkgdir/usr/bin/tempesta\"
+            mkdir -p "\$pkgdir/usr/bin"
+            install -Dm755 tempesta "\$pkgdir/usr/bin/tempesta"
           }
           EOF
 
