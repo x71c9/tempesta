@@ -45,6 +45,9 @@ jobs:
     name: Build Arch Linux Package
     runs-on: ubuntu-latest
     container: archlinux:latest  # Use Arch Linux as a container environment
+    env:
+      GITHUB_REF_NAME: ${{ github.ref_name }}
+
 
     steps:
       - name: Install dependencies (inside Arch container)
@@ -89,7 +92,7 @@ jobs:
         run: |
           sudo -u aurbuilder bash -c "
           export HOME=/home/aurbuilder
-          export VERSION=${GITHUB_REF_NAME#v}  # Remove 'v' prefix
+          export VERSION=${GITHUB_REF_NAME#v}
           cd /home/aurbuilder/build/tempesta;
           mkdir -p pacman_pkg;
           cd bin;
