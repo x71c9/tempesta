@@ -136,13 +136,12 @@ jobs:
           pkgname=tempesta
           pkgver=$version
           pkgrel=1
-          pkgdesc="A CLI application written in Rust"
+          pkgdesc="The fastest and lightest bookmark manager CLI written in Rust"
           arch=('x86_64')
           url="https://github.com/x71c9/tempesta"
           license=('MIT')
           depends=('glibc')
-          makedepends=('cargo')
-          source=("https://github.com/x71c9/tempesta/releases/download/${version}/tempesta-x86_64-unknown-linux-gnu.tar.gz")
+          source=("https://github.com/x71c9/tempesta/releases/download/v${version}/tempesta-x86_64-unknown-linux-gnu.tar.gz")
           sha256sums=('SKIP')
 
           package() {
@@ -151,6 +150,6 @@ jobs:
           EOF
           makepkg --printsrcinfo > .SRCINFO
           git add PKGBUILD .SRCINFO
-          git commit -m "Update to version $version"
+          git commit -m "chore(release): release $version"
           git push origin master
 
