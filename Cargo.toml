@@ -16,7 +16,7 @@ regex = "1"
 
 [package.metadata.release]
 push = true
-publish = true
+# publish = true
 tag-message = "chore(release): v{{version}}"
 pre-release-commit-message = "chore(release): release v{{version}}"
 
