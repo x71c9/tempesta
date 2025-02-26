@@ -44,113 +44,43 @@ jobs:
   build-linux:
     name: Build Arch Linux Package
     runs-on: ubuntu-latest
-    container: archlinux:latest  # Use Arch Linux as a container environment
-    env:
-      GITHUB_REF_NAME: ${{ github.ref_name }}
-
-
     steps:
-      - name: Install dependencies (inside Arch container)
-        run: |
-          pacman -Syu --noconfirm base-devel sudo
-          useradd -m aurbuilder
-          echo "aurbuilder ALL=(ALL) NOPASSWD: ALL" > /etc/sudoers.d/aurbuilder
-          mkdir -p /home/aurbuilder/build
-          chown -R aurbuilder /home/aurbuilder
-
       - name: Checkout repository
-        uses: actions/checkout@v4  # Keep the repository in the default workspace
-
-      - name: Move repository to aurbuilder's home
-        run: |
-          mkdir -p /home/aurbuilder/build/tempesta
-          cp -r . /home/aurbuilder/build/tempesta
-          chown -R aurbuilder /home/aurbuilder/build/tempesta
+        uses: actions/checkout@v4
 
       - name: Install Rust
-        run: |
-          pacman -S --noconfirm rustup
-          sudo -u aurbuilder bash -c "
-          export HOME=/home/aurbuilder
-          export PATH=\$HOME/.cargo/bin:\$PATH
-          rustup install stable
-          rustup default stable
-          rustup target add x86_64-unknown-linux-gnu
-          "
+        uses: dtolnay/rust-toolchain@stable
 
       - name: Build binary
+        run: cargo build --release --target x86_64-unknown-linux-gnu
+
+      - name: Rename and compress binary
         run: |
-          sudo -u aurbuilder bash -c "
-          cd /home/aurbuilder/build/tempesta;
-          cargo build --release --target x86_64-unknown-linux-gnu;
-          mkdir -p bin;
-          cp target/x86_64-unknown-linux-gnu/release/tempesta bin/tempesta;
-          chmod +x bin/tempesta
-          "
+          mkdir -p bin
+          cp target/x86_64-unknown-linux-gnu/release/tempesta bin/tempesta
+          tar -czvf bin/tempesta-x86_64-unknown-linux-gnu.tar.gz -C bin tempesta
 
-      - name: Create Arch Linux Package
-        run: |
-          sudo -E -u aurbuilder bash -c "
-          export HOME=/home/aurbuilder
-          export VERSION=\${GITHUB_REF_NAME#v}
-          cd /home/aurbuilder/build/tempesta;
-          mkdir -p pacman_pkg;
-          cd bin;
-          tar -czvf ../pacman_pkg/tempesta.tar.gz tempesta;
-          cd ../pacman_pkg;
-
-          # Create PKGBUILD
-          cat <<EOF > PKGBUILD
-          pkgname=tempesta
-          pkgver=$VERSION
-          pkgrel=1
-          pkgdesc='A CLI application written in Rust'
-          arch=('x86_64')
-          url='https://github.com/x71c9/tempesta'
-          license=('MIT')
-          depends=('glibc')
-          makedepends=('cargo')
-          source=('tempesta.tar.gz')
-          sha256sums=('SKIP')
-
-          pkgdir=\$srcdir/pkg
-
-          build() {
-            tar -xzf tempesta.tar.gz
-          }
-
-          package() {
-            install -Dm755 tempesta \"\${pkgdir}/usr/bin/tempesta\"
-          }
-          EOF
-
-          makepkg --printsrcinfo > .SRCINFO;
-          makepkg -cf;
-          mv *.pkg.tar.zst ../bin/
-          "
-
-      - name: Upload Linux Package as Artifact
+      - name: Upload binary as artifact
         uses: actions/upload-artifact@v4
         with:
           name: tempesta-linux
-          path: /home/aurbuilder/build/tempesta/bin/*.pkg.tar.zst
+          path: bin/tempesta-x86_64-unknown-linux-gnu.tar.gz
 
   release:
     name: Create GitHub Release
     needs: [build-macos, build-linux]
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Download macOS artifacts
+      - name: Download macOS artifacts (aarch64)
         uses: actions/download-artifact@v4
         with:
           name: tempesta-aarch64-apple-darwin
           path: bin
 
-      - name: Download macOS artifacts
+      - name: Download macOS artifacts (x86_64)
         uses: actions/download-artifact@v4
         with:
           name: tempesta-x86_64-apple-darwin
@@ -181,7 +111,6 @@ jobs:
     name: Update AUR
     needs: release
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout AUR Repository
         run: |
@@ -196,7 +125,6 @@ jobs:
         run: |
           cd aur-tempesta
           version=${GITHUB_REF_NAME#v}  # Remove 'v' prefix
-
           cat <<EOF > PKGBUILD
           pkgname=tempesta
           pkgver=$version
@@ -214,9 +142,7 @@ jobs:
             install -Dm755 tempesta "\$pkgdir/usr/bin/tempesta"
           }
           EOF
-
           makepkg --printsrcinfo > .SRCINFO
-
           git add PKGBUILD .SRCINFO
           git commit -m "Update to version $version"
           git push origin master
