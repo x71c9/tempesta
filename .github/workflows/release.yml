@@ -134,6 +134,9 @@ jobs:
           useradd -m builduser
           echo "builduser ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers
           chown -R builduser:builduser aur-tempesta
+          cp ~/.ssh/id_ed25519 /home/builduser/.ssh/id_ed25519
+          chown -R builduser:builduser /home/builduser/.ssh
+          chmod 600 /home/builduser/.ssh/id_ed25519
 
       - name: Update PKGBUILD and Push to AUR
         run: |
