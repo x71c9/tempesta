@@ -528,7 +528,7 @@ dependencies = [
 
 [[package]]
 name = "tempesta"
-version = "0.0.26"
+version = "0.0.27"
 dependencies = [
  "dirs",
  "regex",
