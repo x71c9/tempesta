@@ -90,9 +90,9 @@ jobs:
 
       - name: Create Arch Linux Package
         run: |
-          sudo -u aurbuilder bash -c "
+          sudo -E -u aurbuilder bash -c "
           export HOME=/home/aurbuilder
-          export VERSION=${GITHUB_REF_NAME#v}
+          export VERSION=\${GITHUB_REF_NAME#v}
           cd /home/aurbuilder/build/tempesta;
           mkdir -p pacman_pkg;
           cd bin;
@@ -113,14 +113,14 @@ jobs:
           source=('tempesta.tar.gz')
           sha256sums=('SKIP')
 
-          pkgdir=$srcdir/pkg
+          pkgdir=\$srcdir/pkg
 
           build() {
             tar -xzf tempesta.tar.gz
           }
 
           package() {
-            install -Dm755 tempesta "${pkgdir}/usr/bin/tempesta"
+            install -Dm755 tempesta \"\${pkgdir}/usr/bin/tempesta\"
           }
           EOF
 
