@@ -53,11 +53,14 @@ jobs:
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
 
+      - name: Install cross
+        run: cargo install cross
+
       - name: Add target
         run: rustup target add ${{ matrix.target }}
 
-      - name: Build binary
-        run: cargo build --release --target ${{ matrix.target }}
+      - name: Build binary with cross
+        run: cross build --release --target ${{ matrix.target }}
 
       - name: Rename and compress binary
         run: |
@@ -182,4 +185,3 @@ jobs:
           git commit -m "chore(release): release ${version}"
           GIT_SSH_COMMAND="ssh -i ~/.ssh/id_ed25519 -o IdentitiesOnly=yes -o StrictHostKeyChecking=no" git push origin master
           SCRIPT
-
