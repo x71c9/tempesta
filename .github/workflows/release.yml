@@ -150,6 +150,7 @@ jobs:
             install -Dm755 tempesta "\$pkgdir/usr/bin/tempesta"
           }
           EOF
+          export MAKEPKG_ALLOW_ROOT=1
           makepkg --printsrcinfo > .SRCINFO
           git add PKGBUILD .SRCINFO
           git commit -m "chore(release): release $version"
