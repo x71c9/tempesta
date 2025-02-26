@@ -126,7 +126,8 @@ jobs:
           ssh-keyscan -t rsa,ecdsa,ed25519 aur.archlinux.org >> ~/.ssh/known_hosts
 
       - name: Checkout AUR Repository
-        run: GIT_SSH_COMMAND="ssh -i ~/.ssh/id_ed25519 -o IdentitiesOnly=yes -o StrictHostKeyChecking=no" \
+        run: |
+          GIT_SSH_COMMAND="ssh -i ~/.ssh/id_ed25519 -o IdentitiesOnly=yes -o StrictHostKeyChecking=no" \
             git clone ssh://aur@aur.archlinux.org/tempesta.git aur-tempesta
 
       - name: Update PKGBUILD and Push to AUR
