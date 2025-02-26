@@ -15,7 +15,6 @@ jobs:
     strategy:
       matrix:
         target: [aarch64-apple-darwin, x86_64-apple-darwin]
-
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -116,7 +115,7 @@ jobs:
     steps:
       - name: Install dependencies
         run: |
-          pacman -Syu --noconfirm base-devel git openssh
+          pacman -Syu --noconfirm base-devel git openssh sudo
 
       - name: Setup SSH
         run: |
@@ -130,28 +129,36 @@ jobs:
           GIT_SSH_COMMAND="ssh -i ~/.ssh/id_ed25519 -o IdentitiesOnly=yes -o StrictHostKeyChecking=no" \
             git clone ssh://aur@aur.archlinux.org/tempesta.git aur-tempesta
 
+      - name: Create non-root build user
+        run: |
+          useradd -m builduser
+          echo "builduser ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers
+          chown -R builduser:builduser aur-tempesta
+
       - name: Update PKGBUILD and Push to AUR
         run: |
+          sudo -E -H -u builduser bash <<SCRIPT
           cd aur-tempesta
-          version=${GITHUB_REF_NAME#v}  # Remove 'v' prefix
+          version=\${GITHUB_REF_NAME#v}
           cat <<EOF > PKGBUILD
-          pkgname=tempesta
-          pkgver=$version
-          pkgrel=1
-          pkgdesc="The fastest and lightest bookmark manager CLI written in Rust"
-          arch=('x86_64')
-          url="https://github.com/x71c9/tempesta"
-          license=('MIT')
-          depends=('glibc')
-          source=("https://github.com/x71c9/tempesta/releases/download/v${version}/tempesta-x86_64-unknown-linux-gnu.tar.gz")
-          sha256sums=('SKIP')
+pkgname=tempesta
+pkgver=\${version}
+pkgrel=1
+pkgdesc="The fastest and lightest bookmark manager CLI written in Rust"
+arch=('x86_64')
+url="https://github.com/x71c9/tempesta"
+license=('MIT')
+depends=('glibc')
+source=("https://github.com/x71c9/tempesta/releases/download/v\${version}/tempesta-x86_64-unknown-linux-gnu.tar.gz")
+sha256sums=('SKIP')
 
-          package() {
-            install -Dm755 tempesta "\$pkgdir/usr/bin/tempesta"
-          }
-          EOF
-          MAKEPKG_ALLOW_ROOT=1 makepkg --printsrcinfo > .SRCINFO
+package() {
+  install -Dm755 tempesta "\$pkgdir/usr/bin/tempesta"
+}
+EOF
+          makepkg --printsrcinfo > .SRCINFO
           git add PKGBUILD .SRCINFO
-          git commit -m "chore(release): release $version"
+          git commit -m "chore(release): release \${version}"
           git push origin master
+SCRIPT
 
