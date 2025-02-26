@@ -161,6 +161,6 @@ jobs:
           git config user.name "x71c9"
           git add .
           git commit -m "chore(release): release \${version}"
-          git push origin master
+          GIT_SSH_COMMAND="ssh -i ~/.ssh/id_ed25519 -o IdentitiesOnly=yes -o StrictHostKeyChecking=no" git push origin master
           SCRIPT
 
