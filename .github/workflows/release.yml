@@ -111,15 +111,22 @@ jobs:
     name: Update AUR
     needs: release
     runs-on: ubuntu-latest
+    container:
+      image: archlinux:latest
     steps:
-      - name: Checkout AUR Repository
+      - name: Install dependencies
+        run: |
+          pacman -Syu --noconfirm base-devel git openssh
+
+      - name: Setup SSH
         run: |
           mkdir -p ~/.ssh
           echo "${{ secrets.AUR_SECRET_KEY }}" > ~/.ssh/id_ed25519
           chmod 600 ~/.ssh/id_ed25519
           ssh-keyscan -t ed25519 aur.archlinux.org >> ~/.ssh/known_hosts
-          git clone ssh://aur@aur.archlinux.org/tempesta.git aur-tempesta
-          cd aur-tempesta
+
+      - name: Checkout AUR Repository
+        run: git clone ssh://aur@aur.archlinux.org/tempesta.git aur-tempesta
 
       - name: Update PKGBUILD and Push to AUR
         run: |
