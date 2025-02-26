@@ -157,7 +157,7 @@ jobs:
           sha256sums=('SKIP')
 
           package() {
-            install -Dm755 tempesta "\$pkgdir/usr/bin/tempesta"
+            install -Dm755 "$srcdir/tempesta" "$pkgdir/usr/bin/tempesta"
           }
           EOF
           makepkg --printsrcinfo > .SRCINFO
