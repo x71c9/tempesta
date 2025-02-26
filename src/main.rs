@@ -69,11 +69,6 @@ fn print_version() {
 }
 
 fn init() {
-  let config = Config {
-    git: false,
-    remote: None,
-  };
-  save_config(&config);
   print!("Do you want to use Git for tracking bookmarks? (Y/n): ");
   io::stdout()
     .flush()
@@ -83,6 +78,11 @@ fn init() {
     .read_line(&mut input)
     .panic_on_error("Failed to read input");
   let use_git = !matches!(input.trim().to_lowercase().as_str(), "n" | "no");
+  let config = Config {
+    git: use_git,
+    remote: None,
+  };
+  save_config(&config);
   if use_git {
     handle_git();
   }
@@ -100,7 +100,7 @@ fn add(args: Vec<String>) {
   }
   let relative_path = &args[3];
   validate_path(relative_path);
-  let toml_file_path = get_toml_file_path(&relative_path);
+  let toml_file_path = get_bookmark_file_path(&relative_path);
   if toml_file_path.exists() {
     print!(
       "Bookmark already exists at {}. Overwrite? (y/N): ",
@@ -145,7 +145,7 @@ fn update(args: Vec<String>) {
   }
   let relative_path = &args[2];
   validate_path(relative_path);
-  let toml_file_path = get_toml_file_path(&relative_path);
+  let toml_file_path = get_bookmark_file_path(&relative_path);
   if !toml_file_path.exists() {
     eprintln!("Path {:?} do not exists", &toml_file_path.to_str());
     std::process::exit(1);
@@ -181,7 +181,7 @@ fn remove(args: Vec<String>) {
     std::process::exit(1);
   }
   let relative_path = &args[2];
-  let toml_file_path = get_toml_file_path(&relative_path);
+  let toml_file_path = get_bookmark_file_path(&relative_path);
   if toml_file_path.exists() {
     fs::remove_file(&toml_file_path).panic_on_error("Failed to remove file");
     println!(
@@ -239,7 +239,7 @@ fn edit(args: Vec<String>) {
   }
   let relative_path = &args[2];
   validate_path(relative_path);
-  let toml_file_path = get_toml_file_path(relative_path);
+  let toml_file_path = get_bookmark_file_path(relative_path);
   if !toml_file_path.exists() {
     eprintln!("Bookmark file does not exist: {}", toml_file_path.display());
     std::process::exit(1);
@@ -407,7 +407,7 @@ fn validate_url(url: &str) {
   }
 }
 
-fn get_toml_file_path(relative_path: &String) -> PathBuf {
+fn get_bookmark_file_path(relative_path: &String) -> PathBuf {
   let mut bookmark_store_dir_path = get_bookmark_store_dir_path();
   let relative_path_buf = PathBuf::from(relative_path);
   let file_name = relative_path_buf
@@ -439,7 +439,7 @@ fn store_bookmark(toml_file_path: &PathBuf, url: &String, tags: &Vec<String>) {
 }
 
 fn get_url(relative_path: &String) -> String {
-  let toml_file_path = get_toml_file_path(relative_path);
+  let toml_file_path = get_bookmark_file_path(relative_path);
   let toml_content =
     fs::read_to_string(toml_file_path).panic_on_error("Failed to read TOML");
   let bookmakr: Bookmark = toml::from_str(&toml_content)
