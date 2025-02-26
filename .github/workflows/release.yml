@@ -141,10 +141,10 @@ jobs:
 
       - name: Update PKGBUILD and Push to AUR
         run: |
-          sudo -E -H -u builduser bash <<SCRIPT
+          sudo -E -H -u builduser bash <<'SCRIPT'
           cd aur-tempesta
           version=${GITHUB_REF_NAME#v}
-          cat <<EOF > PKGBUILD
+          cat > PKGBUILD <<EOF
           pkgname=tempesta
           pkgver=${version}
           pkgrel=1
@@ -157,14 +157,14 @@ jobs:
           sha256sums=('SKIP')
 
           package() {
-            install -Dm755 "\$srcdir/tempesta" "\$pkgdir/usr/bin/tempesta"
+            install -Dm755 "\${srcdir}/tempesta" "\${pkgdir}/usr/bin/tempesta"
           }
           EOF
           makepkg --printsrcinfo > .SRCINFO
           git config user.email "mail@x71c9.com"
           git config user.name "x71c9"
           git add .
-          git commit -m "chore(release): release \${version}"
+          git commit -m "chore(release): release ${version}"
           GIT_SSH_COMMAND="ssh -i ~/.ssh/id_ed25519 -o IdentitiesOnly=yes -o StrictHostKeyChecking=no" git push origin master
           SCRIPT
 
