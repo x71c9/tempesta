@@ -157,7 +157,9 @@ jobs:
           }
           EOF
           makepkg --printsrcinfo > .SRCINFO
-          git add PKGBUILD .SRCINFO
+          git config user.email "mail@x71c9.com"
+          git config user.name "x71c9"
+          git add .
           git commit -m "chore(release): release \${version}"
           git push origin master
           SCRIPT
