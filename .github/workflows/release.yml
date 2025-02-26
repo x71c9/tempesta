@@ -143,21 +143,21 @@ jobs:
         run: |
           sudo -E -H -u builduser bash <<SCRIPT
           cd aur-tempesta
-          version=\${GITHUB_REF_NAME#v}
+          version=${GITHUB_REF_NAME#v}
           cat <<EOF > PKGBUILD
           pkgname=tempesta
-          pkgver=\${version}
+          pkgver=${version}
           pkgrel=1
           pkgdesc="The fastest and lightest bookmark manager CLI written in Rust"
           arch=('x86_64')
           url="https://github.com/x71c9/tempesta"
           license=('MIT')
           depends=('glibc')
-          source=("https://github.com/x71c9/tempesta/releases/download/v\${version}/tempesta-x86_64-unknown-linux-gnu.tar.gz")
+          source=("https://github.com/x71c9/tempesta/releases/download/v${version}/tempesta-x86_64-unknown-linux-gnu.tar.gz")
           sha256sums=('SKIP')
 
           package() {
-            install -Dm755 "$srcdir/tempesta" "$pkgdir/usr/bin/tempesta"
+            install -Dm755 "\$srcdir/tempesta" "\$pkgdir/usr/bin/tempesta"
           }
           EOF
           makepkg --printsrcinfo > .SRCINFO
