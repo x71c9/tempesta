@@ -130,7 +130,7 @@ fn add(args: Vec<String>) {
   validate_url(url);
   let tags = &args[4..].to_vec();
   store_bookmark(&toml_file_path, url, tags);
-  let comment = format!("\"Add bookmark {}\"", &relative_path);
+  let comment = format!("Add bookmark {}", &relative_path);
   git_commit(&comment);
   println!(
     "Bookmark added successfully at: {}",
@@ -154,7 +154,7 @@ fn update(args: Vec<String>) {
   validate_url(url);
   let tags = &args[4..].to_vec();
   store_bookmark(&toml_file_path, url, tags);
-  let comment = format!("\"Update bookmark {}\"", &relative_path);
+  let comment = format!("Update bookmark {}", &relative_path);
   git_commit(&comment);
 
   println!(
@@ -196,7 +196,7 @@ fn remove(args: Vec<String>) {
         break;
       }
     }
-    let comment = format!("\"Remove bookmark {}\"", &relative_path);
+    let comment = format!("Remove bookmark {}", &relative_path);
     git_commit(&comment);
     return;
   }
@@ -224,7 +224,7 @@ fn remove(args: Vec<String>) {
     fs::remove_dir_all(&given_path)
       .panic_on_error("Failed to remove directory");
     let comment =
-      format!("\"Removed directory {} and all bookmarks\"", relative_path);
+      format!("Removed directory {} and all bookmarks", relative_path);
     git_commit(&comment);
     println!("Directory and all bookmarks removed: {}", relative_path);
     return;
@@ -264,7 +264,7 @@ fn edit(args: Vec<String>) {
     .and_then(|m| m.modified())
     .ok();
   if metadata_before != metadata_after {
-    let comment = format!("\"Edit bookmark {}\"", &toml_file_path.display());
+    let comment = format!("Edit bookmark {}", &toml_file_path.display());
     git_commit(&comment);
     println!(
       "Bookmark edited successfully at: {}",
