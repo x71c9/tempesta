@@ -18,6 +18,7 @@ struct Bookmark {
 struct Config {
   git: bool,
   remote: Option<String>,
+  dir: String,
 }
 
 trait PanicOnError<T> {
@@ -69,6 +70,24 @@ fn print_version() {
 }
 
 fn init() {
+  print!("Where do you want to store the bookmarks? [~/.bookmark-store]: ");
+  io::stdout()
+    .flush()
+    .panic_on_error("Failed to flush stdout");
+  let mut storage_path = String::new();
+  io::stdin()
+    .read_line(&mut storage_path)
+    .panic_on_error("Failed to read input");
+  let storage_path = storage_path.trim();
+  let storage_path = if storage_path.is_empty() {
+    let home_dir =
+      dirs::home_dir().panic_on_error("Could not find home directory");
+    let mut default_dir = PathBuf::from(home_dir);
+    default_dir.push(".bookmark-store");
+    default_dir.to_string_lossy().into_owned()
+  } else {
+    storage_path.to_string()
+  };
   print!("Do you want to use Git for tracking bookmarks? (Y/n): ");
   io::stdout()
     .flush()
@@ -81,10 +100,11 @@ fn init() {
   let config = Config {
     git: use_git,
     remote: None,
+    dir: storage_path.to_string(),
   };
   save_config(&config);
   if use_git {
-    handle_git();
+    handle_git(&config);
   }
   let config_file_path = get_config_file_path();
   println!(
@@ -303,12 +323,10 @@ fn save_config(config: &Config) {
     .panic_on_error("Cannot write config file");
 }
 
-fn handle_git() {
-  let mut git_remote = None;
-  if prompt_git_remote() {
-    git_remote = prompt_remote_url();
-  }
+fn handle_git(previous_config: &Config) {
+  let git_remote = prompt_remote_url();
   let bookmark_store_dir_path = get_bookmark_store_dir_path();
+
   run_command(
     "git",
     &["init"],
@@ -319,7 +337,9 @@ fn handle_git() {
     "Git repository initialized at {}",
     bookmark_store_dir_path.display()
   );
+
   if let Some(remote) = &git_remote {
+    let branch_name = prompt_branch_name();
     run_command(
       "git",
       &["remote", "add", "origin", remote],
@@ -329,47 +349,49 @@ fn handle_git() {
     println!("Git remote repository set to {}", remote);
     run_command(
       "git",
-      &["pull", "origin"],
+      &["pull", "origin", &branch_name],
       &bookmark_store_dir_path,
       "Failed to pull from origin",
     );
   }
+
   let config = Config {
     git: true,
     remote: git_remote,
+    dir: previous_config.dir.clone(),
   };
   save_config(&config);
 }
 
-fn prompt_git_remote() -> bool {
-  let message =
-    "Do you want to set up a remote origin for the repository? (Y/n): ";
-  print!("{}", message);
-  io::stdout()
-    .flush()
-    .panic_on_error("Failed to flush stdout");
+fn prompt_remote_url() -> Option<String> {
+  print!("Enter the remote repository URI (leave empty for no remote): ");
+  io::stdout().flush().panic_on_error("Failed to flush stdout");
+
   let mut input = String::new();
   io::stdin()
     .read_line(&mut input)
     .panic_on_error("Failed to read input");
-  !matches!(input.trim().to_lowercase().as_str(), "n" | "no")
+  let trimmed = input.trim();
+
+  if trimmed.is_empty() {
+    None
+  } else {
+    Some(trimmed.to_string())
+  }
 }
 
-fn prompt_remote_url() -> Option<String> {
-  let message = "Enter the remote repository URL: ";
-  print!("{}", message);
-  io::stdout()
-    .flush()
-    .panic_on_error("Failed to flush stdout");
+fn prompt_branch_name() -> String {
+  print!("Enter the branch name to pull from [master]: ");
+  io::stdout().flush().panic_on_error("Failed to flush stdout");
   let mut input = String::new();
   io::stdin()
     .read_line(&mut input)
     .panic_on_error("Failed to read input");
   let trimmed = input.trim();
   if trimmed.is_empty() {
-    None
+    "master".to_string() // Default to "master" if no input is given
   } else {
-    Some(trimmed.to_string())
+    trimmed.to_string()
   }
 }
 
@@ -390,7 +412,8 @@ fn run_command(
 fn get_bookmark_store_dir_path() -> PathBuf {
   let home_dir =
     dirs::home_dir().panic_on_error("Could not find home directory");
-  let bookmark_store_dir_path = home_dir.join(".bookmark-store");
+  let config = load_config();
+  let bookmark_store_dir_path = home_dir.join(config.dir);
   fs::create_dir_all(&bookmark_store_dir_path)
     .panic_on_error("Failed to create bookmark store");
   bookmark_store_dir_path
