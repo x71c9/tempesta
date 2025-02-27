@@ -327,6 +327,12 @@ fn handle_git() {
       "Failed to add remote repository",
     );
     println!("Git remote repository set to {}", remote);
+    run_command(
+      "git",
+      &["pull", "origin"],
+      &bookmark_store_dir_path,
+      "Failed to pull from origin",
+    );
   }
   let config = Config {
     git: true,
