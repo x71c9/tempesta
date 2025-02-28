@@ -152,10 +152,7 @@ fn add(args: Vec<String>) {
   store_bookmark(&toml_file_path, url, tags);
   let comment = format!("Add bookmark {}", &relative_path);
   git_commit(&comment);
-  println!(
-    "Bookmark added successfully at: {}",
-    toml_file_path.display()
-  );
+  println!("Bookmark added successfully as {}", &relative_path);
 }
 
 fn update(args: Vec<String>) {
@@ -177,10 +174,7 @@ fn update(args: Vec<String>) {
   let comment = format!("Update bookmark {}", &relative_path);
   git_commit(&comment);
 
-  println!(
-    "Bookmark updated successfully at: {}",
-    toml_file_path.display()
-  );
+  println!("Bookmark updated successfully as {}", &relative_path);
 }
 
 fn open(args: Vec<String>) {
@@ -204,10 +198,7 @@ fn remove(args: Vec<String>) {
   let toml_file_path = get_bookmark_file_path(&relative_path);
   if toml_file_path.exists() {
     fs::remove_file(&toml_file_path).panic_on_error("Failed to remove file");
-    println!(
-      "Bookmark removed successfully: {}",
-      toml_file_path.display()
-    );
+    println!("Bookmark removed successfully as {}", &relative_path);
     let mut parent_dir = toml_file_path.parent();
     while let Some(dir) = parent_dir {
       if fs::remove_dir(dir).is_ok() {
@@ -286,10 +277,7 @@ fn edit(args: Vec<String>) {
   if metadata_before != metadata_after {
     let comment = format!("Edit bookmark {}", &toml_file_path.display());
     git_commit(&comment);
-    println!(
-      "Bookmark edited successfully at: {}",
-      toml_file_path.display()
-    );
+    println!("Bookmark edited successfully as {}", &relative_path);
   } else {
     println!("No changes made.");
   }
@@ -365,7 +353,9 @@ fn handle_git(previous_config: &Config) {
 
 fn prompt_remote_url() -> Option<String> {
   print!("Enter the remote repository URI (leave empty for no remote): ");
-  io::stdout().flush().panic_on_error("Failed to flush stdout");
+  io::stdout()
+    .flush()
+    .panic_on_error("Failed to flush stdout");
 
   let mut input = String::new();
   io::stdin()
@@ -382,7 +372,9 @@ fn prompt_remote_url() -> Option<String> {
 
 fn prompt_branch_name() -> String {
   print!("Enter the branch name to pull from [master]: ");
-  io::stdout().flush().panic_on_error("Failed to flush stdout");
+  io::stdout()
+    .flush()
+    .panic_on_error("Failed to flush stdout");
   let mut input = String::new();
   io::stdin()
     .read_line(&mut input)
@@ -465,6 +457,7 @@ fn store_bookmark(toml_file_path: &PathBuf, url: &String, tags: &Vec<String>) {
     toml::to_string(&bookmark).panic_on_error("Failed to serialize bookmark");
   fs::write(toml_file_path, toml_content)
     .panic_on_error("Failed to write bookmark file");
+  println!("Bookmark file stored at {}", toml_file_path.display())
 }
 
 fn get_url(relative_path: &String) -> String {
@@ -477,6 +470,7 @@ fn get_url(relative_path: &String) -> String {
 }
 
 fn push_to_origin() {
+  println!("Pushing changes to remote origin...");
   git_command(&["push", "-u", "--all"], "Cannot push to origin");
 }
 
