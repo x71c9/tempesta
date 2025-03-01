@@ -121,3 +121,20 @@ In order to make completion in bash to work with alias you can add the following
 complete -o default -o nospace -F _tempesta t
 ```
 where the final `t` is the name of the alias.
+
+### FZF
+
+If [`fzf`](https://github.com/junegunn/fzf) is installed on your system and the
+the method `open` is called without arguments:
+
+```bash
+tempesta open
+```
+it will start a fuzzy find of the bookmark.
+
+A usefull alias can be made for this:
+
+```bash
+alias to='tempesta o'
+```
+
