@@ -49,7 +49,7 @@ tempesta remove search-engines/google
 
 ## Shortcut
 
-You can use the initial of the methods instead of their full name:
+You can use the initial of the methods instead of their full identifier:
 
 ```bash
 [a]dd     -- Add a new bookmark
