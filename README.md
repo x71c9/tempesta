@@ -108,3 +108,16 @@ you can use in the repo directory:
 ```bash
 cargo install --path .
 ```
+
+### Alias
+
+Most likely you will alias the command with
+```bash
+alias t='tempesta'
+```
+
+In order to make completion in bash to work with alias you can add the following:
+```bash
+complete -o default -o nospace -F _tempesta t
+```
+where the final `t` is the name of the alias.

@@ -291,7 +291,7 @@ fn run_fzf_if_available() -> Option<String> {
     .stdin(Stdio::piped())
     .stdout(Stdio::piped())
     .spawn()
-    .expect("Failed to start fzf");
+    .panic_on_error("Failed to start fzf");
 
   if let Some(mut stdin) = child.stdin.take() {
     stdin.write_all(input.as_bytes()).ok()?;
@@ -657,7 +657,7 @@ fn detect_shell() -> Option<String> {
 
 fn write_completion(shell: Shell) -> io::Result<PathBuf> {
   let target_dir = dirs::config_dir()
-    .expect("Failed to get config dir")
+    .panic_on_error("Failed to get config dir")
     .join("tempesta/completions");
   fs::create_dir_all(&target_dir)?;
   let file_path = target_dir.join(shell.filename());
