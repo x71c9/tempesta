@@ -4,7 +4,7 @@ use std::env;
 use std::fs::{self, OpenOptions};
 use std::io::{self, BufRead, BufReader, Write};
 use std::path::PathBuf;
-use std::process::Command;
+use std::process::{Command, Stdio};
 use toml;
 use webbrowser;
 
@@ -256,15 +256,90 @@ fn update(args: Vec<String>) {
 }
 
 fn open(args: Vec<String>) {
-  if args.len() < 3 {
-    eprintln!("Usage: tempesta open <path>");
-    std::process::exit(1);
-  }
-  let relative_path = &args[2];
-  validate_path(relative_path);
-  let url = get_url(relative_path);
+  let relative_path = if args.len() < 3 {
+    // No path provided, try to invoke fzf
+    if let Some(selected_path) = run_fzf_if_available() {
+      selected_path
+    } else {
+      eprintln!("Usage: tempesta open <path>");
+      std::process::exit(1);
+    }
+  } else {
+    args[2].clone()
+  };
+
+  validate_path(&relative_path);
+  let url = get_url(&relative_path);
   validate_url(&url);
   webbrowser::open(&url).panic_on_error("Failed to open browser");
+}
+
+fn run_fzf_if_available() -> Option<String> {
+  if !is_fzf_available() {
+    eprintln!("fzf not found in PATH");
+    return None;
+  }
+
+  let bookmarks = get_toml_bookmark_files();
+  if bookmarks.is_empty() {
+    eprintln!("No bookmarks found.");
+    return None;
+  }
+
+  let input = bookmarks.join("\n");
+  let mut child = Command::new("fzf")
+    .stdin(Stdio::piped())
+    .stdout(Stdio::piped())
+    .spawn()
+    .expect("Failed to start fzf");
+
+  if let Some(mut stdin) = child.stdin.take() {
+    stdin.write_all(input.as_bytes()).ok()?;
+  }
+
+  let output = child.wait_with_output().ok()?;
+  if output.status.success() {
+    let selected = String::from_utf8_lossy(&output.stdout).trim().to_string();
+    if !selected.is_empty() {
+      return Some(selected);
+    }
+  }
+
+  None
+}
+
+fn is_fzf_available() -> bool {
+  Command::new("fzf").arg("--version").output().is_ok()
+}
+
+fn get_toml_bookmark_files() -> Vec<String> {
+  let root_dir = get_bookmark_store_dir_path();
+  let mut bookmarks = Vec::new();
+  fn visit_dir(dir: &PathBuf, root_dir: &PathBuf, bookmarks: &mut Vec<String>) {
+    if let Ok(entries) = fs::read_dir(dir) {
+      for entry in entries.filter_map(|e| e.ok()) {
+        let path = entry.path();
+        if path.is_dir() {
+          visit_dir(&path, root_dir, bookmarks); // recurse
+        } else if path.is_file()
+          && path.extension().map_or(false, |ext| ext == "toml")
+        {
+          if let Ok(relative_path) = path.strip_prefix(root_dir) {
+            if let Some(relative_str) = relative_path.to_str() {
+              // Strip .toml extension
+              let without_extension = relative_str.trim_end_matches(".toml");
+              bookmarks.push(without_extension.to_string());
+            }
+          }
+        }
+      }
+    }
+  }
+  visit_dir(&root_dir, &root_dir, &mut bookmarks);
+  if bookmarks.is_empty() {
+    eprintln!("No .toml files found in {:?}", root_dir);
+  }
+  bookmarks
 }
 
 fn remove(args: Vec<String>) {
