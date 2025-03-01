@@ -279,33 +279,55 @@ fn run_fzf_if_available() -> Option<String> {
     eprintln!("fzf not found in PATH");
     return None;
   }
-
   let bookmarks = get_toml_bookmark_files();
   if bookmarks.is_empty() {
     eprintln!("No bookmarks found.");
     return None;
   }
-
-  let input = bookmarks.join("\n");
+  let decorated = bookmarks
+    .iter()
+    .filter_map(|path| {
+      let mut current_path = get_bookmark_store_dir_path();
+      current_path.push(PathBuf::from(path));
+      let full_path = format!("{}.toml", &current_path.display());
+      let url =
+        extract_url_from_toml(&full_path).unwrap_or_else(|_| "N/A".to_string());
+      let dim_url = format!("\x1b[2m :: {}\x1b[0m", url);
+      Some(format!("{}{}", path, dim_url))
+    })
+    .collect::<Vec<_>>()
+    .join("\n");
   let mut child = Command::new("fzf")
+    .arg("--ansi")
     .stdin(Stdio::piped())
     .stdout(Stdio::piped())
     .spawn()
     .panic_on_error("Failed to start fzf");
-
   if let Some(mut stdin) = child.stdin.take() {
-    stdin.write_all(input.as_bytes()).ok()?;
+    stdin.write_all(decorated.as_bytes()).ok()?;
   }
-
   let output = child.wait_with_output().ok()?;
   if output.status.success() {
     let selected = String::from_utf8_lossy(&output.stdout).trim().to_string();
     if !selected.is_empty() {
-      return Some(selected);
+      // Extract just the filename (strip the " - url" part if necessary)
+      return Some(selected.split(" :: ").next()?.to_string());
     }
   }
-
   None
+}
+
+// Example function to extract the URL from the TOML file
+fn extract_url_from_toml(
+  path: &str,
+) -> Result<String, Box<dyn std::error::Error>> {
+  let content = fs::read_to_string(path)?;
+  let toml: toml::Value = toml::from_str(&content)?;
+  toml
+    .get("url")
+    .and_then(|v| v.as_str())
+    .map(String::from)
+    .ok_or_else(|| "Missing or invalid `url`".into())
 }
 
 fn is_fzf_available() -> bool {
