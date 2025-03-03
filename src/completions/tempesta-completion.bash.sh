@@ -3,7 +3,7 @@ _tempesta() {
 
     # When only the command is entered, complete the subcommands.
     if [ $COMP_CWORD -eq 1 ]; then
-        local subcommands="add edit open remove update a e o r u"
+        local subcommands="add edit move open remove update a e m o r u"
         COMPREPLY=( $( compgen -W "$subcommands" -- "${COMP_WORDS[1]}" ) )
         return 0
     fi
@@ -20,6 +20,12 @@ _tempesta() {
     # Handle third argument when the subcommand is "add" or "a"
     if [[ $COMP_CWORD -eq 3 && ( $subcmd == 'add' || $subcmd == 'a' ) ]]; then
         cur="${COMP_WORDS[3]}"
+        COMPREPLY=( $( compgen -W "$(_tempesta_complete_entries_helper)" -- "$cur" ) )
+        return 0
+    fi
+
+    if [[ $COMP_CWORD -eq 4 && ( $subcmd == 'move' || $subcmd == 'm' ) ]]; then
+        cur="${COMP_WORDS[4]}"
         COMPREPLY=( $( compgen -W "$(_tempesta_complete_entries_helper)" -- "$cur" ) )
         return 0
     fi

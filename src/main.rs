@@ -3,7 +3,7 @@ use serde::{Deserialize, Serialize};
 use std::env;
 use std::fs::{self, OpenOptions};
 use std::io::{self, BufRead, BufReader, Write};
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
 use toml;
 use webbrowser;
@@ -89,6 +89,7 @@ fn main() {
     "init" | "i" => init(),
     "add" | "a" => add(args),
     "update" | "u" => update(args),
+    "move" | "m" => r#move(args),
     "open" | "o" => open(args),
     "edit" | "e" => edit(args),
     "remove" | "r" => remove(args),
@@ -231,6 +232,56 @@ fn add(args: Vec<String>) {
   let comment = format!("Add bookmark {}", &relative_path);
   git_commit(&comment);
   println!("Bookmark added successfully as {}", &relative_path);
+}
+
+fn r#move(args: Vec<String>) {
+  if args.len() < 4 {
+    eprintln!("Usage: tempesta move <path-from> <path-to>");
+    std::process::exit(1);
+  }
+  let relative_path_from = &args[2];
+  validate_path(relative_path_from);
+  let relative_path_to = &args[3];
+  validate_path(relative_path_to);
+  let toml_from_file_path = get_bookmark_file_path(&relative_path_from);
+  if !toml_from_file_path.exists() {
+    eprintln!("Path {:?} do not exists", &toml_from_file_path.to_str());
+    std::process::exit(1);
+  }
+  let toml_to_file_path = get_bookmark_file_path(&relative_path_to);
+  if toml_to_file_path.exists() {
+    if !prompt_for_overwrite(&toml_to_file_path) {
+      println!("Move operation aborted.");
+      std::process::exit(0);
+    }
+  }
+
+  if let Some(parent) = toml_to_file_path.parent() {
+    if !parent.exists() {
+      fs::create_dir_all(parent)
+        .panic_on_error("Failed to create destination directory")
+    }
+  }
+
+  fs::rename(&toml_from_file_path, &toml_to_file_path)
+    .panic_on_error("Failed to move bookmark file");
+
+  // After successful move, cleanup empty parent directories
+  if let Some(parent) = toml_from_file_path.parent() {
+    cleanup_empty_parents(parent)
+      .panic_on_error("Warning: Failed to clean up empty directories")
+  }
+
+  let comment = format!(
+    "Move bookmark from {} to {}",
+    &relative_path_from, &relative_path_to
+  );
+  git_commit(&comment);
+
+  println!(
+    "Bookmark moved successfully from {} to {}",
+    &relative_path_from, &relative_path_to
+  );
 }
 
 fn update(args: Vec<String>) {
@@ -766,5 +817,54 @@ fn generate_source_line(shell: Shell, completion_path: &str) -> String {
   match shell {
     Shell::Bash | Shell::Zsh => format!("source \"{}\"", completion_path),
     Shell::Fish => format!("source \"{}\"", completion_path), // fish uses `source` too for compatibility
+  }
+}
+
+/// Recursively removes parent directories if they are empty.
+/// Stops once a non-empty directory is found or the root is reached.
+fn cleanup_empty_parents(starting_dir: &Path) -> std::io::Result<()> {
+  let mut current = starting_dir.to_path_buf();
+  loop {
+    // If directory does not exist (already removed), we just break.
+    if !current.exists() {
+      break;
+    }
+    // Check if the directory is empty.
+    let is_empty = fs::read_dir(&current)?.next().is_none();
+    if is_empty {
+      // Try to remove the directory.
+      fs::remove_dir(&current)?;
+      // Move to parent directory for the next check.
+      if !current.pop() {
+        break; // Reached the root.
+      }
+    } else {
+      break; // Stop if we hit a non-empty directory.
+    }
+  }
+  Ok(())
+}
+
+fn prompt_for_overwrite(destination: &PathBuf) -> bool {
+  print!(
+    "A bookmark already exists at {}. Overwrite? [Y/n]: ",
+    destination.display()
+  );
+  io::stdout().flush().expect("Failed to flush stdout");
+
+  let mut input = String::new();
+  io::stdin()
+    .read_line(&mut input)
+    .expect("Failed to read user input");
+
+  let trimmed = input.trim().to_lowercase();
+
+  match trimmed.as_str() {
+    "" | "y" | "yes" => true, // Default to yes on Enter
+    "n" | "no" => false,
+    _ => {
+      println!("Invalid input, assuming 'no'.");
+      false
+    }
   }
 }

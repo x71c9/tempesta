@@ -13,6 +13,11 @@ _tempesta () {
       add|a)
         _arguments : "2:bookmark:_tempesta_complete_entries_helper"
         ;;
+      move|m)
+        _arguments \
+          "1:source:_tempesta_complete_entries_helper" \
+          "2:destination:_tempesta_complete_entries_helper" \
+        ;;
       update|edit|remove|open|u|e|r|o)
         _arguments : "1:bookmark:_tempesta_complete_entries_helper"
         ;;
@@ -24,6 +29,7 @@ _tempesta () {
     subcommands=(
       "\[a\]dd:Add a new bookmark"
       "\[e\]dit:Edit an existing bookmark"
+      "\[m\]ove:Move an existing bookmark"
       "\[o\]pen:Open a bookmark"
       "\[r\]emove:Remove a bookmark"
       "\[u\]pdate:Update an existing bookmark"
