@@ -2,6 +2,10 @@
 
 ## Release
 
+```bash
+cargo install cargo-release
+```
+
 Release a version with:
 
 ```bash
