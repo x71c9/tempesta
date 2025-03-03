@@ -1,4 +1,4 @@
-_tempesta_completion() {
+_tempesta() {
     local cur subcmd
 
     # When only the command is entered, complete the subcommands.
@@ -34,5 +34,5 @@ _tempesta_complete_entries_helper() {
       | sort
 }
 
-complete -F _tempesta_completion tempesta
+complete -F _tempesta tempesta
 
