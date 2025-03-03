@@ -111,16 +111,27 @@ cargo install --path .
 
 ### Alias
 
+#### ZSH Alias
 Most likely you will alias the command with
 ```bash
 alias t='tempesta'
 ```
-
 In order to make completion in bash to work with alias you can add the following:
 ```bash
 complete -o default -o nospace -F _tempesta t
 ```
 where the final `t` is the name of the alias.
+
+#### Bash Alias
+Autocompletion do not work for bash alias but works when using functions,
+therefore is recommended to use a function instead, for example:
+
+```bash
+t() {
+  tempesta "$@"
+}
+complete -o default -o nospace -F _tempesta t
+```
 
 ### FZF
 
