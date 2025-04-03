@@ -14,7 +14,7 @@ It can also track all the changes using `git`.
 
 #### Init
 
-Before starting using it run:
+Before start using it, run:
 ```bash
 tempesta init
 ```
