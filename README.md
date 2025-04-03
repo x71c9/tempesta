@@ -12,6 +12,14 @@ It can also track all the changes using `git`.
 
 ## How to use it
 
+#### Init
+
+Before starting using it run:
+```bash
+tempesta init
+```
+This will prompt with questions about the set up.
+
 #### Add a bookmark
 ```bash
 tempesta add <local-path> <url>
