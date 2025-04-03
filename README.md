@@ -40,6 +40,13 @@ tempesta open <local-path>
 tempesta open search-engines/google
 ```
 
+#### Move a bookmark
+```bash
+tempesta move <local-path>
+
+tempesta move search-engines/google query-engines/google
+```
+
 #### Remove a bookmark
 ```bash
 tempesta remove <local-path>
@@ -55,6 +62,7 @@ You can use the initial of the methods instead of their full identifier:
 [a]dd     -- Add a new bookmark
 [e]dit    -- Edit an existing bookmark
 [o]pen    -- Open a bookmark
+[m]ove    -- Move a bookmark
 [r]emove  -- Remove a bookmark
 [u]pdate  -- Update an existing bookmark
 ```
