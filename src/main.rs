@@ -742,21 +742,31 @@ fn write_completion(shell: Shell) -> io::Result<PathBuf> {
     shell.to_str(),
     file_path.display()
   );
+  print_source_completion(shell);
   Ok(file_path)
 }
 
-fn update_shell_profile(shell: Shell, completion_path: &str) -> io::Result<()> {
+fn print_source_completion(shell: Shell) {
+  let profile_path = get_profile_path(shell);
+  println!(
+    "For activating autocompletion restart the terminal or run: \nsource {}",
+    profile_path.display()
+  )
+}
+
+fn get_profile_path(shell: Shell) -> PathBuf {
   let profile_path = match shell {
     Shell::Zsh => home_dir_file(".zshrc"),
     Shell::Bash => home_dir_file(".bash_profile"),
     Shell::Fish => home_dir_file(".config/fish/config.fish"),
-  };
-  if let Some(profile) = profile_path {
-    update_profile_file(&profile, shell, completion_path)
-  } else {
-    eprintln!("Could not locate home directory");
-    Ok(())
   }
+  .expect("Could not determine home directory or file path!");
+  return profile_path;
+}
+
+fn update_shell_profile(shell: Shell, completion_path: &str) -> io::Result<()> {
+  let profile_path = get_profile_path(shell);
+  return update_profile_file(&profile_path, shell, completion_path);
 }
 
 fn home_dir_file(filename: &str) -> Option<PathBuf> {
