@@ -194,10 +194,10 @@ fn init() {
 
 fn add(args: Vec<String>) {
   if args.len() < 4 {
-    eprintln!("Usage: tempesta add <url> <path> [tags...]");
+    eprintln!("Usage: tempesta add <path> <url> [tags...]");
     std::process::exit(1);
   }
-  let relative_path = &args[3];
+  let relative_path = &args[2];
   validate_path(relative_path);
   let toml_file_path = get_bookmark_file_path(&relative_path);
   if toml_file_path.exists() {
@@ -225,7 +225,7 @@ fn add(args: Vec<String>) {
     }
     println!("Overwriting file...");
   }
-  let url = &args[2];
+  let url = &args[3];
   validate_url(url);
   let tags = &args[4..].to_vec();
   store_bookmark(&toml_file_path, url, tags);

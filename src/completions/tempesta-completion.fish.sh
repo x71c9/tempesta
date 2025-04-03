@@ -23,13 +23,8 @@ complete -c tempesta -n '__fish_use_subcommand' -a "o" -d "Shortcut for open"
 complete -c tempesta -n '__fish_use_subcommand' -a "r" -d "Shortcut for remove"
 complete -c tempesta -n '__fish_use_subcommand' -a "u" -d "Shortcut for update"
 
-# Completion for entries (for all subcommands except "add" and "a")
-for cmd in edit open remove update e o r u
-    complete -c tempesta -n "__fish_seen_subcommand_from $cmd; and not __fish_seen_subcommand_from add a" -a "(_tempesta_complete_entries)"
-end
-
-# Completion for entries as the 3rd argument for "add" and "a"
-for cmd in add a
-    complete -c tempesta -n "__fish_seen_subcommand_from $cmd; and count (commandline -opc) = 3" -a "(_tempesta_complete_entries)"
+# Completion for entries for all subcommands
+for cmd in add edit open move remove update a e m o r u
+    complete -c tempesta -n "__fish_seen_subcommand_from $cmd" -a "(_tempesta_complete_entries)"
 end
 

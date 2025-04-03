@@ -14,9 +14,9 @@ It can also track all the changes using `git`.
 
 #### Add a bookmark
 ```bash
-tempesta add <url> <local-path>
+tempesta add <local-path> <url>
 
-tempesta add "http://google.com/" search-engines/google
+tempesta add search-engines/google "http://google.com/"
 ```
 
 #### Update a bookmark

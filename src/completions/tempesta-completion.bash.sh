@@ -10,16 +10,9 @@ _tempesta() {
 
     subcmd="${COMP_WORDS[1]}"
 
-    # Handle second argument for all commands except "add" and "a"
-    if [[ $COMP_CWORD -eq 2 && $subcmd != 'add' && $subcmd != 'a' ]]; then
+    # Handle second argument for all commands
+    if [[ $COMP_CWORD -eq 2 ]]; then
         cur="${COMP_WORDS[2]}"
-        COMPREPLY=( $( compgen -W "$(_tempesta_complete_entries_helper)" -- "$cur" ) )
-        return 0
-    fi
-
-    # Handle third argument when the subcommand is "add" or "a"
-    if [[ $COMP_CWORD -eq 3 && ( $subcmd == 'add' || $subcmd == 'a' ) ]]; then
-        cur="${COMP_WORDS[3]}"
         COMPREPLY=( $( compgen -W "$(_tempesta_complete_entries_helper)" -- "$cur" ) )
         return 0
     fi
