@@ -749,7 +749,7 @@ fn write_completion(shell: Shell) -> io::Result<PathBuf> {
 fn print_source_completion(shell: Shell) {
   let profile_path = get_profile_path(shell);
   println!(
-    "For activating autocompletion restart the terminal or run: \nsource {}",
+    "\x1b[1mFor activating autocompletion restart the terminal or run: \nsource {}\x1b[0m",
     profile_path.display()
   )
 }
