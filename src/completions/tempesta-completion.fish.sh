@@ -1,5 +1,5 @@
 function _get_bookmark_directory
-    tempesta config | string match -r 'Bookmark directory: *(.+)' | string replace -r 'Bookmark directory: *' ''
+    tempesta config | string match -r 'Bookmark store directory: *(.+)' | string replace -r 'Bookmark store directory: *' ''
 end
 
 function _tempesta_complete_entries_helper

@@ -26,7 +26,7 @@ _tempesta() {
 
 # Function to get the bookmark directory from the `tempesta config` command
 _get_bookmark_directory() {
-  tempesta config | awk -F': ' '/Bookmark directory:/ {print $2}' | xargs
+  tempesta config | awk -F': ' '/Bookmark store directory:/ {print $2}' | xargs
 }
 
 _tempesta_complete_entries_helper() {
