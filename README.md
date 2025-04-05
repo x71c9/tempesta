@@ -10,6 +10,40 @@ some intuitive commands for adding, updating, editing and open URLs.
 
 It can also track all the changes using `git`.
 
+## Table of content
+
+<details>
+  <summary>How to use it</summary>
+
+  - [Init](#init)
+  - [Add a bookmark](#add-a-bookmark)
+  - [Update a bookmark](#update-a-bookmark)
+  - [Edit a bookmark](#edit-a-bookmark)
+  - [Open the URL in the browser](#open-the-url-in-the-browser)
+  - [Move a bookmark](#move-a-bookmark)
+  - [Remove a bookmark](#remove-a-bookmark)
+</details>
+
+- [Shortcut](#shortcut)
+
+<details>
+  <summary>Install</summary>
+
+  - [MacOS (Homebrew)](#macos-homebrew)
+  - [Arch Linux (AUR)](#arch-linux-aur)
+  - [Download binaries](#download-binaries)
+  - [Build from source](#build-from-source)
+</details>
+
+<details>
+  <summary>Alias</summary>
+
+  - [ZSH Alias](#zsh-alias)
+  - [Bash Alias](#bash-alias)
+</details>
+
+- [FZF](#fzf)
+
 ## How to use it
 
 #### Init
