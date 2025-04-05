@@ -1,7 +1,7 @@
 use regex::Regex;
 use serde::{Deserialize, Serialize};
 use std::env;
-use std::fs::{self, OpenOptions};
+use std::fs::{self, File, OpenOptions};
 use std::io::{self, BufRead, BufReader, Write};
 use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
@@ -144,24 +144,8 @@ fn print_version() {
 }
 
 fn init() {
-  print!("Where do you want to store the bookmarks? [~/.bookmark-store]: ");
-  io::stdout()
-    .flush()
-    .panic_on_error("Failed to flush stdout");
-  let mut storage_path = String::new();
-  io::stdin()
-    .read_line(&mut storage_path)
-    .panic_on_error("Failed to read input");
-  let storage_path = storage_path.trim();
-  let storage_path = if storage_path.is_empty() {
-    let home_dir =
-      dirs::home_dir().panic_on_error("Could not find home directory");
-    let mut default_dir = PathBuf::from(home_dir);
-    default_dir.push(".bookmark-store");
-    default_dir.to_string_lossy().into_owned()
-  } else {
-    storage_path.to_string()
-  };
+  let storage_path = prompt_valid_bookmark_store_path();
+
   print!("Do you want to enable shell auto completion [recommended]? (Y/n): ");
   io::stdout()
     .flush()
@@ -202,6 +186,52 @@ fn init() {
     "Tempesta initialized successfully: {}",
     config_file_path.display()
   );
+}
+
+fn prompt_valid_bookmark_store_path() -> String {
+  loop {
+    let mut storage_path = String::new();
+    print!("Where do you want to store the bookmarks? [~/.bookmark-store]: ");
+    io::stdout().flush().unwrap();
+    io::stdin()
+      .read_line(&mut storage_path)
+      .expect("Failed to read input");
+    let storage_path = storage_path.trim();
+
+    // Default path if the user input is empty
+    let storage_path = if storage_path.is_empty() {
+      let home_dir = dirs::home_dir().expect("Could not find home directory");
+      let mut default_dir = PathBuf::from(home_dir);
+      default_dir.push(".bookmark-store");
+      default_dir.to_string_lossy().into_owned()
+    } else {
+      let expanded = expand_tilde(storage_path);
+      let path = Path::new(&expanded);
+
+      // Check if the path is a valid string and the user has write permission
+      if (path.is_absolute() || path.parent().is_some())
+        && check_write_permission(path)
+      {
+        expanded.to_string_lossy().into_owned()
+      } else {
+        println!("Invalid or unwritable path. Please try again.");
+        continue;
+      }
+    };
+
+    return storage_path;
+  }
+}
+
+fn check_write_permission(path: &Path) -> bool {
+  let test_file = path.join(".permission_check");
+  match File::create(&test_file) {
+    Ok(_) => {
+      let _ = fs::remove_file(test_file);
+      true
+    }
+    Err(_) => false,
+  }
 }
 
 fn add(args: Vec<String>) {
@@ -716,6 +746,10 @@ fn get_url(relative_path: &String) -> String {
 }
 
 fn push_to_origin() {
+  let config = load_config();
+  if config.remote.is_none() {
+    return;
+  }
   println!("Pushing changes to remote origin...");
   git_command(&["push", "-u", "--all"], "Cannot push to origin");
 }
