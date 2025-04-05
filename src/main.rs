@@ -94,6 +94,7 @@ fn main() {
     "edit" | "e" => edit(args),
     "remove" | "r" => remove(args),
     "activate-completion" => activate_completion(args),
+    "config" | "c" => config(),
     "--version" | "-v" => print_version(),
     _ => {
       eprintln!("Unknown command: {}", command);
@@ -104,6 +105,17 @@ fn main() {
     }
   }
   std::process::exit(0);
+}
+
+fn config() {
+  let config = load_config();
+  println!("Git enabled: {}", config.git);
+  if let Some(remote) = &config.remote {
+    println!("Remote: {}", remote);
+  } else {
+    println!("Remote: None");
+  }
+  println!("Bookmark store directory: {}", config.dir);
 }
 
 fn activate_completion(args: Vec<String>) {
@@ -768,7 +780,7 @@ fn write_completion(shell: Shell) -> io::Result<PathBuf> {
 fn print_source_completion(shell: Shell) {
   let profile_path = get_profile_path(shell);
   println!(
-    "\x1b[1mFor activating autocompletion restart the terminal or run: \nsource {}\x1b[0m",
+    "\x1b[1mFor activating autocompletion you can do one of the following:\n- Run the command `tempesta activate-completion`\n- Restart the terminal.\n- Run: \nsource {}\x1b[0m",
     profile_path.display()
   )
 }

@@ -1,5 +1,11 @@
+function _get_bookmark_directory
+    tempesta config | string match -r 'Bookmark directory: *(.+)' | string replace -r 'Bookmark directory: *' ''
+end
+
 function _tempesta_complete_entries_helper
-    set -l prefix (string replace -r '^$' $HOME/.bookmark-store -- "$BOOKMARK_STORE_DIR")
+    # Dynamically infer the prefix from the tempesta config command
+    set -l prefix (_get_bookmark_directory)
+
     find -L "$prefix" \( -name .git -o -name .gpg-id \) -prune -o -type f -name "*.toml" -print 2>/dev/null \
     | sed -e "s#${prefix}/\{0,1\}##" -e 's#\.toml$##' -e 's#\\#\\\\#g' -e 's#:#\\:#g' \
     | sort

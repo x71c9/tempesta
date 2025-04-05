@@ -24,8 +24,16 @@ _tempesta() {
     fi
 }
 
+# Function to get the bookmark directory from the `tempesta config` command
+_get_bookmark_directory() {
+  tempesta config | awk -F': ' '/Bookmark directory:/ {print $2}' | xargs
+}
+
 _tempesta_complete_entries_helper() {
-    local prefix="${BOOKMARK_STORE_DIR:-$HOME/.bookmark-store}"
+    # local prefix="${BOOKMARK_STORE_DIR:-$HOME/.bookmark-store}"
+    # Set the prefix dynamically
+    local prefix="$(_get_bookmark_directory)"
+
     # Find all *.toml files (ignoring .git and .gpg-id), remove the store prefix and the .toml extension,
     # escape backslashes and colons, and sort the list.
     find -L "$prefix" \( -name .git -o -name .gpg-id \) -prune -o -type f -name "*.toml" -print 2>/dev/null \
