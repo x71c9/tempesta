@@ -702,7 +702,7 @@ fn expand_tilde(path: &str) -> PathBuf {
 }
 
 fn validate_path(relative_path: &str) {
-  let re = Regex::new(r"^[a-zA-Z0-9_/.-]+$").panic_on_error("Invalid path");
+  let re = Regex::new(r"^[a-zåäöA-ZÅÄÖ0-9_/.-]+$").panic_on_error("Invalid path");
   if !re.is_match(relative_path) {
     panic!("Invalid path. Please avoid spaces and special characters.");
   }
