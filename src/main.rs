@@ -208,15 +208,22 @@ fn prompt_valid_bookmark_store_path() -> String {
       let expanded = expand_tilde(storage_path);
       let path = Path::new(&expanded);
 
-      // Check if the path is a valid string and the user has write permission
-      if (path.is_absolute() || path.parent().is_some())
-        && check_write_permission(path)
-      {
-        expanded.to_string_lossy().into_owned()
-      } else {
-        println!("Invalid or unwritable path. Please try again.");
+      // Check if the path is valid (absolute or has a parent directory)
+      if !(path.is_absolute() || path.parent().is_some()) {
+        println!("Invalid path format. Please enter a valid absolute or relative path.");
         continue;
       }
+
+      // Check if the path has write permission
+      if !check_write_permission(&path) {
+        println!(
+          "No write permission for the specified path: {}",
+          expanded.to_string_lossy()
+        );
+        continue;
+      }
+
+      expanded.to_string_lossy().into_owned()
     };
 
     return storage_path;
@@ -224,10 +231,17 @@ fn prompt_valid_bookmark_store_path() -> String {
 }
 
 fn check_write_permission(path: &Path) -> bool {
-  let test_file = path.join(".permission_check");
+  // Get the parent directory or use the path itself if it's already a directory
+  let parent = if path.is_dir() {
+    path
+  } else {
+    path.parent().unwrap_or(path)
+  };
+
+  let test_file = parent.join(".permission_check");
   match File::create(&test_file) {
     Ok(_) => {
-      let _ = fs::remove_file(test_file);
+      let _ = fs::remove_file(&test_file);
       true
     }
     Err(_) => false,
