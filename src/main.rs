@@ -631,7 +631,6 @@ fn run_command(
   dir: &std::path::Path,
   error_message: &str,
 ) {
-  // println!("{} {}", &cmd, &args.join(", "));
   Command::new(cmd)
     .args(args)
     .current_dir(dir)
@@ -640,31 +639,21 @@ fn run_command(
 }
 
 fn get_bookmark_store_dir_path() -> PathBuf {
-  // let home_dir =
-  //   dirs::home_dir().panic_on_error("Could not find home directory");
   let config = load_config();
-  // let bookmark_store_dir_path = home_dir.join(config.dir);
-  // let bookmark_store_dir_path = home_dir.join(config.dir);
   let expanded_dir = expand_tilde(&config.dir);
-  println!("Resolved path: {:?}", expanded_dir);
   fs::create_dir_all(&expanded_dir)
     .panic_on_error("Failed to create bookmark store");
-  // bookmark_store_dir_path
   expanded_dir
 }
 
 fn expand_tilde(path: &str) -> PathBuf {
   if path == "~" {
-    // If the path is exactly "~", return the home directory
     return dirs::home_dir().unwrap_or_else(|| PathBuf::from("~"));
   } else if path.starts_with("~/") {
-    // If the path starts with "~/", replace "~" with the home directory
     if let Some(home) = dirs::home_dir() {
-      // Replace "~/" with the home directory path
       return home.join(path.trim_start_matches("~/"));
     }
   }
-  // Return the original path if no tilde expansion is needed
   PathBuf::from(path)
 }
 
@@ -780,7 +769,7 @@ fn write_completion(shell: Shell) -> io::Result<PathBuf> {
 fn print_source_completion(shell: Shell) {
   let profile_path = get_profile_path(shell);
   println!(
-    "\x1b[1mFor activating autocompletion you can do one of the following:\n- Run the command `tempesta activate-completion`\n- Restart the terminal.\n- Run: \nsource {}\x1b[0m",
+    "\x1b[1mFor activating autocompletion you can do one of the following:\n- Restart the terminal.\n- Run: `source {}`\x1b[0m",
     profile_path.display()
   )
 }

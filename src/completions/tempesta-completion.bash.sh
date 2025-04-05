@@ -33,6 +33,7 @@ _tempesta_complete_entries_helper() {
     # local prefix="${BOOKMARK_STORE_DIR:-$HOME/.bookmark-store}"
     # Set the prefix dynamically
     local prefix="$(_get_bookmark_directory)"
+    local prefix=$(eval echo $prefix)
 
     # Find all *.toml files (ignoring .git and .gpg-id), remove the store prefix and the .toml extension,
     # escape backslashes and colons, and sort the list.

@@ -47,6 +47,7 @@ _tempesta_complete_entries_helper () {
   # local prefix="${BOOKMARK_STORE_DIR:-$HOME/.bookmark-store}"
   # Set the prefix dynamically
   local prefix="$(_get_bookmark_directory)"
+  local prefix=$(eval echo $prefix)
 
   _values -C 'bookmarks' ${$(find -L "$prefix" \( -name .git -o -name .gpg-id \) -prune -o -type f -name "*.toml" -print 2>/dev/null | sed -e "s#${prefix}/\{0,1\}##" -e 's#\.toml$##' -e 's#\\#\\\\#g' -e 's#:#\\:#g' | sort):-""}
 }

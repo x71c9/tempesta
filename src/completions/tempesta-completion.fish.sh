@@ -5,6 +5,10 @@ end
 function _tempesta_complete_entries_helper
     # Dynamically infer the prefix from the tempesta config command
     set -l prefix (_get_bookmark_directory)
+    # Expand tilde if present
+    if string match -q "~*" "$prefix"
+      set prefix (eval echo $prefix)
+    end
 
     find -L "$prefix" \( -name .git -o -name .gpg-id \) -prune -o -type f -name "*.toml" -print 2>/dev/null \
     | sed -e "s#${prefix}/\{0,1\}##" -e 's#\.toml$##' -e 's#\\#\\\\#g' -e 's#:#\\:#g' \
