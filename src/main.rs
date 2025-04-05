@@ -179,7 +179,7 @@ fn init() {
   let config = Config {
     git: use_git,
     remote: None,
-    dir: storage_path.to_string(),
+    dir: storage_path,
   };
   save_config(&config);
   if use_git {
@@ -628,13 +628,15 @@ fn run_command(
 }
 
 fn get_bookmark_store_dir_path() -> PathBuf {
-  let home_dir =
-    dirs::home_dir().panic_on_error("Could not find home directory");
+  // let home_dir =
+  //   dirs::home_dir().panic_on_error("Could not find home directory");
   let config = load_config();
-  let bookmark_store_dir_path = home_dir.join(config.dir);
-  fs::create_dir_all(&bookmark_store_dir_path)
+  // let bookmark_store_dir_path = home_dir.join(config.dir);
+  // let bookmark_store_dir_path = home_dir.join(config.dir);
+  fs::create_dir_all(&config.dir)
     .panic_on_error("Failed to create bookmark store");
-  bookmark_store_dir_path
+  // bookmark_store_dir_path
+  return PathBuf::from(&config.dir);
 }
 
 fn validate_path(relative_path: &str) {
