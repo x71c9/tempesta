@@ -633,10 +633,27 @@ fn get_bookmark_store_dir_path() -> PathBuf {
   let config = load_config();
   // let bookmark_store_dir_path = home_dir.join(config.dir);
   // let bookmark_store_dir_path = home_dir.join(config.dir);
-  fs::create_dir_all(&config.dir)
+  let expanded_dir = expand_tilde(&config.dir);
+  println!("Resolved path: {:?}", expanded_dir);
+  fs::create_dir_all(&expanded_dir)
     .panic_on_error("Failed to create bookmark store");
   // bookmark_store_dir_path
-  return PathBuf::from(&config.dir);
+  expanded_dir
+}
+
+fn expand_tilde(path: &str) -> PathBuf {
+  if path == "~" {
+    // If the path is exactly "~", return the home directory
+    return dirs::home_dir().unwrap_or_else(|| PathBuf::from("~"));
+  } else if path.starts_with("~/") {
+    // If the path starts with "~/", replace "~" with the home directory
+    if let Some(home) = dirs::home_dir() {
+      // Replace "~/" with the home directory path
+      return home.join(path.trim_start_matches("~/"));
+    }
+  }
+  // Return the original path if no tilde expansion is needed
+  PathBuf::from(path)
 }
 
 fn validate_path(relative_path: &str) {
