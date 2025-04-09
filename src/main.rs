@@ -166,7 +166,7 @@ fn init() {
   }
 
   // Select finder for tempesta open
-  print!("Which finder executable to you want to use? [fzf/wofi]: ");
+  print!("Which finder executable do you want to use? [fzf/wofi]: ");
   io::stdout()
     .flush()
     .panic_on_error("Failed to flush stdout");
@@ -202,7 +202,6 @@ fn init() {
     .read_line(&mut input)
     .panic_on_error("Failed to read input");
   let use_git = !matches!(input.trim().to_lowercase().as_str(), "n" | "no");
-
   let config = Config {
     git: use_git,
     remote: None,
