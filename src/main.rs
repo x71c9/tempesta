@@ -19,6 +19,7 @@ struct Config {
   git: bool,
   remote: Option<String>,
   dir: String,
+  finder: String,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -163,6 +164,35 @@ fn init() {
   if enable_autocomplete {
     activate_completion(vec![])
   }
+
+  // Select finder for tempesta open
+  print!("Which finder executable to you want to use? [fzf/wofi]: ");
+  io::stdout()
+    .flush()
+    .panic_on_error("Failed to flush stdout");
+  let mut finder_executable_input = String::new();
+  io::stdin()
+    .read_line(&mut finder_executable_input)
+    .panic_on_error("Failed to read input");
+  let finder_executable: String = match finder_executable_input.trim().to_lowercase().as_str() {
+    "fzf" => {
+      let finder_executable_input = "fzf";
+      finder_executable_input.to_owned()
+    },
+    "wofi"   => {
+      let finder_executable_input = "wofi";
+      finder_executable_input.to_owned()
+    },
+    _ => {
+      print!("Unsupported finder: {}, defaulting to fzf\n", finder_executable_input.trim());
+      io::stdout()
+        .flush()
+        .panic_on_error("Failed to flush stdout");
+      let finder_executable_input = "fzf";
+      finder_executable_input.to_owned()
+    },
+  };
+
   print!("Do you want to use Git for tracking bookmarks? (Y/n): ");
   io::stdout()
     .flush()
@@ -172,10 +202,12 @@ fn init() {
     .read_line(&mut input)
     .panic_on_error("Failed to read input");
   let use_git = !matches!(input.trim().to_lowercase().as_str(), "n" | "no");
+
   let config = Config {
     git: use_git,
     remote: None,
     dir: storage_path,
+    finder: finder_executable
   };
   save_config(&config);
   if use_git {
@@ -364,8 +396,8 @@ fn update(args: Vec<String>) {
 
 fn open(args: Vec<String>) {
   let relative_path = if args.len() < 3 {
-    // No path provided, try to invoke fzf
-    if let Some(selected_path) = run_fzf_if_available() {
+    // No path provided, try to invoke finder
+    if let Some(selected_path) = run_finder_if_available() {
       selected_path
     } else {
       eprintln!("Usage: tempesta open <path>");
@@ -381,9 +413,10 @@ fn open(args: Vec<String>) {
   webbrowser::open(&url).panic_on_error("Failed to open browser");
 }
 
-fn run_fzf_if_available() -> Option<String> {
-  if !is_fzf_available() {
-    eprintln!("fzf not found in PATH");
+fn run_finder_if_available() -> Option<String> {
+  let config = load_config();
+  if !is_finder_available() {
+    eprintln!("Selected finder {} not found in PATH", config.finder);
     return None;
   }
   let bookmarks = get_toml_bookmark_files();
@@ -399,17 +432,41 @@ fn run_fzf_if_available() -> Option<String> {
       let full_path = format!("{}.toml", &current_path.display());
       let url =
         extract_url_from_toml(&full_path).unwrap_or_else(|_| "N/A".to_string());
-      let dim_url = format!("\x1b[2m :: {}\x1b[0m", url);
+      let dim_url = {
+        if config.finder == "wofi" {
+          let dim_url = format!(" :: {}", url);
+          dim_url
+        } else {
+          let dim_url = format!("\x1b[2m :: {}\x1b[0m", url);
+          dim_url
+        }
+      };
       Some(format!("{}{}", path, dim_url))
     })
     .collect::<Vec<_>>()
     .join("\n");
-  let mut child = Command::new("fzf")
-    .arg("--ansi")
-    .stdin(Stdio::piped())
-    .stdout(Stdio::piped())
-    .spawn()
-    .panic_on_error("Failed to start fzf");
+  let mut child = {
+    if config.finder == "wofi" {
+      let command = Command::new("wofi")
+        .arg("--dmenu")
+        .arg("--insensitive")
+        .arg("--width")
+        .arg("65%")
+        .stdin(Stdio::piped())
+        .stdout(Stdio::piped())
+        .spawn()
+        .panic_on_error("Failed to start wofi");
+      command
+    } else {
+      let command = Command::new("fzf")
+        .arg("--ansi")
+        .stdin(Stdio::piped())
+        .stdout(Stdio::piped())
+        .spawn()
+        .panic_on_error("Failed to start fzf");
+      command
+    }
+  };
   if let Some(mut stdin) = child.stdin.take() {
     stdin.write_all(decorated.as_bytes()).ok()?;
   }
@@ -437,8 +494,17 @@ fn extract_url_from_toml(
     .ok_or_else(|| "Missing or invalid `url`".into())
 }
 
-fn is_fzf_available() -> bool {
-  Command::new("fzf").arg("--version").output().is_ok()
+fn is_finder_available() -> bool {
+  let config = load_config();
+  if config.finder == "fzf" {
+    Command::new("fzf").arg("--version").output().is_ok()
+  }
+  else if config.finder == "wofi" {
+    Command::new("wofi").arg("--version").output().is_ok()
+  }
+  else {
+    return false
+  }
 }
 
 fn get_toml_bookmark_files() -> Vec<String> {
@@ -629,6 +695,7 @@ fn handle_git(previous_config: &Config) {
     git: true,
     remote: git_remote,
     dir: previous_config.dir.clone(),
+    finder: previous_config.finder.clone(),
   };
   save_config(&config);
 }
