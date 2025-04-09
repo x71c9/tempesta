@@ -5,8 +5,6 @@ use std::fs::{self, File, OpenOptions};
 use std::io::{self, BufRead, BufReader, Write};
 use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
-use toml;
-use webbrowser;
 
 #[derive(Serialize, Deserialize)]
 struct Bookmark {
@@ -185,8 +183,8 @@ fn init() {
         finder_executable_input.to_owned()
       }
       _ => {
-        print!(
-          "Unsupported finder: {}, defaulting to fzf\n",
+        println!(
+          "Unsupported finder: {}, defaulting to fzf",
           finder_executable_input.trim()
         );
         io::stdout()
@@ -236,7 +234,7 @@ fn prompt_valid_bookmark_store_path() -> String {
     // Default path if the user input is empty
     let storage_path = if storage_path.is_empty() {
       let home_dir = dirs::home_dir().expect("Could not find home directory");
-      let mut default_dir = PathBuf::from(home_dir);
+      let mut default_dir = home_dir;
       default_dir.push(".bookmark-store");
       default_dir.to_string_lossy().into_owned()
     } else {
@@ -250,7 +248,7 @@ fn prompt_valid_bookmark_store_path() -> String {
       }
 
       // Check if the path has write permission
-      if !check_write_permission(&path) {
+      if !check_write_permission(path) {
         println!(
           "No write permission for the specified path: {}",
           expanded.to_string_lossy()
@@ -290,7 +288,7 @@ fn add(args: Vec<String>) {
   }
   let relative_path = &args[2];
   validate_path(relative_path);
-  let toml_file_path = get_bookmark_file_path(&relative_path);
+  let toml_file_path = get_bookmark_file_path(relative_path);
   if toml_file_path.exists() {
     print!(
       "Bookmark already exists at {}. Overwrite? (y/N): ",
@@ -334,17 +332,15 @@ fn r#move(args: Vec<String>) {
   validate_path(relative_path_from);
   let relative_path_to = &args[3];
   validate_path(relative_path_to);
-  let toml_from_file_path = get_bookmark_file_path(&relative_path_from);
+  let toml_from_file_path = get_bookmark_file_path(relative_path_from);
   if !toml_from_file_path.exists() {
     eprintln!("Path {:?} do not exists", &toml_from_file_path.to_str());
     std::process::exit(1);
   }
-  let toml_to_file_path = get_bookmark_file_path(&relative_path_to);
-  if toml_to_file_path.exists() {
-    if !prompt_for_overwrite(&toml_to_file_path) {
-      println!("Move operation aborted.");
-      std::process::exit(0);
-    }
+  let toml_to_file_path = get_bookmark_file_path(relative_path_to);
+  if toml_to_file_path.exists() && !prompt_for_overwrite(&toml_to_file_path) {
+    println!("Move operation aborted.");
+    std::process::exit(0);
   }
 
   if let Some(parent) = toml_to_file_path.parent() {
@@ -382,7 +378,7 @@ fn update(args: Vec<String>) {
   }
   let relative_path = &args[2];
   validate_path(relative_path);
-  let toml_file_path = get_bookmark_file_path(&relative_path);
+  let toml_file_path = get_bookmark_file_path(relative_path);
   if !toml_file_path.exists() {
     eprintln!("Path {:?} do not exists", &toml_file_path.to_str());
     std::process::exit(1);
@@ -518,7 +514,7 @@ fn get_toml_bookmark_files() -> Vec<String> {
         if path.is_dir() {
           visit_dir(&path, root_dir, bookmarks); // recurse
         } else if path.is_file()
-          && path.extension().map_or(false, |ext| ext == "toml")
+          && path.extension().is_some_and(|ext| ext == "toml")
         {
           if let Ok(relative_path) = path.strip_prefix(root_dir) {
             if let Some(relative_str) = relative_path.to_str() {
@@ -544,7 +540,7 @@ fn remove(args: Vec<String>) {
     std::process::exit(1);
   }
   let relative_path = &args[2];
-  let toml_file_path = get_bookmark_file_path(&relative_path);
+  let toml_file_path = get_bookmark_file_path(relative_path);
   if toml_file_path.exists() {
     fs::remove_file(&toml_file_path).panic_on_error("Failed to remove file");
     println!("Bookmark removed successfully as {}", &relative_path);
@@ -635,7 +631,7 @@ fn edit(args: Vec<String>) {
 fn get_config_file_path() -> PathBuf {
   let home_dir =
     dirs::home_dir().panic_on_error("Could not find home directory");
-  let mut config_path = PathBuf::from(home_dir);
+  let mut config_path = home_dir;
   config_path.push(".config/tempesta");
   fs::create_dir_all(&config_path)
     .panic_on_error("Failed to create config directory");
@@ -804,13 +800,13 @@ fn get_bookmark_file_path(relative_path: &String) -> PathBuf {
   fs::create_dir_all(&bookmark_store_dir_path)
     .panic_on_error("Failed to create directory");
   bookmark_store_dir_path.push(file_name);
-  return bookmark_store_dir_path;
+  bookmark_store_dir_path
 }
 
-fn store_bookmark(toml_file_path: &PathBuf, url: &String, tags: &Vec<String>) {
+fn store_bookmark(toml_file_path: &PathBuf, url: &str, tags: &[String]) {
   let bookmark = Bookmark {
-    url: url.clone(),
-    tags: tags.clone(),
+    url: url.to_owned(),
+    tags: tags.to_owned(),
   };
   let toml_content =
     toml::to_string(&bookmark).panic_on_error("Failed to serialize bookmark");
@@ -837,7 +833,7 @@ fn push_to_origin() {
   git_command(&["push", "-u", "--all"], "Cannot push to origin");
 }
 
-fn git_commit(comment: &String) {
+fn git_commit(comment: &str) {
   git_command(&["add", "-A"], "Failed to add file to git stage");
   git_command(&["commit", "-m", comment], "Failed to commit to git");
   push_to_origin();
@@ -860,9 +856,9 @@ const FISH_COMPLETION: &str =
   include_str!("completions/tempesta-completion.fish.sh");
 
 fn detect_shell() -> Option<String> {
-  env::var("SHELL")
-    .ok()
-    .and_then(|shell_path| shell_path.split('/').last().map(|s| s.to_string()))
+  env::var("SHELL").ok().and_then(|shell_path| {
+    shell_path.split('/').next_back().map(|s| s.to_string())
+  })
 }
 
 fn write_completion(shell: Shell) -> io::Result<PathBuf> {
@@ -892,18 +888,17 @@ fn print_source_completion(shell: Shell) {
 }
 
 fn get_profile_path(shell: Shell) -> PathBuf {
-  let profile_path = match shell {
+  match shell {
     Shell::Zsh => home_dir_file(".zshrc"),
     Shell::Bash => home_dir_file(".bash_profile"),
     Shell::Fish => home_dir_file(".config/fish/config.fish"),
   }
-  .expect("Could not determine home directory or file path!");
-  return profile_path;
+  .expect("Could not determine home directory or file path!")
 }
 
 fn update_shell_profile(shell: Shell, completion_path: &str) -> io::Result<()> {
   let profile_path = get_profile_path(shell);
-  return update_profile_file(&profile_path, shell, completion_path);
+  update_profile_file(&profile_path, shell, completion_path)
 }
 
 fn home_dir_file(filename: &str) -> Option<PathBuf> {
@@ -992,7 +987,7 @@ fn cleanup_empty_parents(starting_dir: &Path) -> std::io::Result<()> {
   Ok(())
 }
 
-fn prompt_for_overwrite(destination: &PathBuf) -> bool {
+fn prompt_for_overwrite(destination: &Path) -> bool {
   print!(
     "A bookmark already exists at {}. Overwrite? [Y/n]: ",
     destination.display()
