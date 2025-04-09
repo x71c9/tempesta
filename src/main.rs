@@ -174,24 +174,28 @@ fn init() {
   io::stdin()
     .read_line(&mut finder_executable_input)
     .panic_on_error("Failed to read input");
-  let finder_executable: String = match finder_executable_input.trim().to_lowercase().as_str() {
-    "fzf" => {
-      let finder_executable_input = "fzf";
-      finder_executable_input.to_owned()
-    },
-    "wofi"   => {
-      let finder_executable_input = "wofi";
-      finder_executable_input.to_owned()
-    },
-    _ => {
-      print!("Unsupported finder: {}, defaulting to fzf\n", finder_executable_input.trim());
-      io::stdout()
-        .flush()
-        .panic_on_error("Failed to flush stdout");
-      let finder_executable_input = "fzf";
-      finder_executable_input.to_owned()
-    },
-  };
+  let finder_executable: String =
+    match finder_executable_input.trim().to_lowercase().as_str() {
+      "fzf" => {
+        let finder_executable_input = "fzf";
+        finder_executable_input.to_owned()
+      }
+      "wofi" => {
+        let finder_executable_input = "wofi";
+        finder_executable_input.to_owned()
+      }
+      _ => {
+        print!(
+          "Unsupported finder: {}, defaulting to fzf\n",
+          finder_executable_input.trim()
+        );
+        io::stdout()
+          .flush()
+          .panic_on_error("Failed to flush stdout");
+        let finder_executable_input = "fzf";
+        finder_executable_input.to_owned()
+      }
+    };
 
   print!("Do you want to use Git for tracking bookmarks? (Y/n): ");
   io::stdout()
@@ -206,7 +210,7 @@ fn init() {
     git: use_git,
     remote: None,
     dir: storage_path,
-    finder: finder_executable
+    finder: finder_executable,
   };
   save_config(&config);
   if use_git {
@@ -497,12 +501,10 @@ fn is_finder_available() -> bool {
   let config = load_config();
   if config.finder == "fzf" {
     Command::new("fzf").arg("--version").output().is_ok()
-  }
-  else if config.finder == "wofi" {
+  } else if config.finder == "wofi" {
     Command::new("wofi").arg("--version").output().is_ok()
-  }
-  else {
-    return false
+  } else {
+    return false;
   }
 }
 
@@ -768,7 +770,8 @@ fn expand_tilde(path: &str) -> PathBuf {
 }
 
 fn validate_path(relative_path: &str) {
-  let re = Regex::new(r"^[a-zåäöA-ZÅÄÖ0-9_/.-]+$").panic_on_error("Invalid path");
+  let re =
+    Regex::new(r"^[a-zåäöA-ZÅÄÖ0-9_/.-]+$").panic_on_error("Invalid path");
   if !re.is_match(relative_path) {
     panic!("Invalid path. Please avoid spaces and special characters.");
   }
@@ -820,9 +823,9 @@ fn get_url(relative_path: &String) -> String {
   let toml_file_path = get_bookmark_file_path(relative_path);
   let toml_content =
     fs::read_to_string(toml_file_path).panic_on_error("Failed to read TOML");
-  let bookmakr: Bookmark = toml::from_str(&toml_content)
+  let bookmark: Bookmark = toml::from_str(&toml_content)
     .panic_on_error("Failed to parse TOML content");
-  return bookmakr.url;
+  bookmark.url
 }
 
 fn push_to_origin() {
