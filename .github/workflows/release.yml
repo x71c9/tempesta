@@ -1,13 +1,11 @@
+---
 name: Release Binaries
-
 on:
   push:
     tags:
       - "v*.*.*"
-
 permissions:
-  contents: write  # Required to create a GitHub Release
-
+  contents: write # Required to create a GitHub Release
 jobs:
   build-macos:
     name: Build macOS Binaries
@@ -18,28 +16,22 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
-
       - name: Add target
         run: rustup target add ${{ matrix.target }}
-
       - name: Build binary
         run: cargo build --release --target ${{ matrix.target }}
-
       - name: Rename and compress binary
         run: |
           mkdir -p bin
           cp target/${{ matrix.target }}/release/tempesta bin/tempesta
           tar -czvf bin/tempesta-${{ matrix.target }}.tar.gz -C bin tempesta
-
       - name: Upload binary as artifact
         uses: actions/upload-artifact@v4
         with:
           name: tempesta-${{ matrix.target }}
           path: bin/tempesta-${{ matrix.target }}.tar.gz
-
   build-linux:
     name: Build Arch Linux Packages
     runs-on: ubuntu-latest
@@ -49,31 +41,24 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
-
       - name: Install cross
         run: cargo install cross
-
       - name: Add target
         run: rustup target add ${{ matrix.target }}
-
       - name: Build binary with cross
         run: cross build --release --target ${{ matrix.target }}
-
       - name: Rename and compress binary
         run: |
           mkdir -p bin
           cp target/${{ matrix.target }}/release/tempesta bin/tempesta
           tar -czvf bin/tempesta-${{ matrix.target }}.tar.gz -C bin tempesta
-
       - name: Upload binary as artifact
         uses: actions/upload-artifact@v4
         with:
           name: tempesta-${{ matrix.target }}
           path: bin/tempesta-${{ matrix.target }}.tar.gz
-
   release:
     name: Create GitHub Release
     needs: [build-macos, build-linux]
@@ -81,31 +66,26 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-
       - name: Download macOS artifacts (aarch64)
         uses: actions/download-artifact@v4
         with:
           name: tempesta-aarch64-apple-darwin
           path: bin
-
       - name: Download macOS artifacts (x86_64)
         uses: actions/download-artifact@v4
         with:
           name: tempesta-x86_64-apple-darwin
           path: bin
-
       - name: Download Linux artifacts (x86_64)
         uses: actions/download-artifact@v4
         with:
           name: tempesta-x86_64-unknown-linux-gnu
           path: bin
-
       - name: Download Linux artifacts (aarch64)
         uses: actions/download-artifact@v4
         with:
           name: tempesta-aarch64-unknown-linux-gnu
           path: bin
-
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
@@ -113,14 +93,12 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
           draft: false
           prerelease: false
-
       - name: Trigger Homebrew Tap Update
         run: |
           curl -X POST -H "Accept: application/vnd.github.v3+json" \
                -H "Authorization: token ${{ secrets.HOMEBREW_PAT }}" \
                https://api.github.com/repos/x71c9/homebrew-x71c9/dispatches \
                -d '{"event_type": "update-homebrew", "client_payload": {"tag": "${{ github.ref_name }}"}}'
-
   update-aur:
     name: Update AUR
     needs: release
@@ -131,19 +109,16 @@ jobs:
       - name: Install dependencies
         run: |
           pacman -Syu --noconfirm base-devel git openssh sudo
-
       - name: Setup SSH
         run: |
           mkdir -p ~/.ssh
           echo "${{ secrets.AUR_SECRET_KEY }}" > ~/.ssh/id_ed25519
           chmod 600 ~/.ssh/id_ed25519
           ssh-keyscan -t rsa,ecdsa,ed25519 aur.archlinux.org >> ~/.ssh/known_hosts
-
       - name: Checkout AUR Repository
         run: |
           GIT_SSH_COMMAND="ssh -i ~/.ssh/id_ed25519 -o IdentitiesOnly=yes -o StrictHostKeyChecking=no" \
             git clone ssh://aur@aur.archlinux.org/tempesta.git aur-tempesta
-
       - name: Create non-root build user
         run: |
           useradd -m builduser
@@ -153,14 +128,13 @@ jobs:
           cp ~/.ssh/id_ed25519 /home/builduser/.ssh/id_ed25519
           chown -R builduser:builduser /home/builduser/.ssh
           chmod 600 /home/builduser/.ssh/id_ed25519
-
       - name: Update PKGBUILD and Push to AUR
         run: |
           sudo -E -H -u builduser bash <<'SCRIPT'
           cd aur-tempesta
           version=${GITHUB_REF_NAME#v}
           cat > PKGBUILD <<EOF
-          pkgname=tempesta
+          pkgname=tempesta-bin
           pkgver=${version}
           pkgrel=1
           pkgdesc="The fastest and lightest bookmark manager CLI written in Rust"
@@ -171,11 +145,11 @@ jobs:
 
           case "\$arch" in
             "x86_64")
-              source=("https://github.com/x71c9/tempesta/releases/download/v${version}/tempesta-x86_64-unknown-linux-gnu.tar.gz")
+              source+=(\${pkgname}-\${pkgver}-\${arch}::"https://github.com/x71c9/tempesta/releases/download/v\${pkgver}/tempesta-\${arch}-unknown-linux-gnu.tar.gz")
               sha256sums=('SKIP')
               ;;
             "aarch64")
-              source=("https://github.com/x71c9/tempesta/releases/download/v${version}/tempesta-aarch64-unknown-linux-gnu.tar.gz")
+              source+=(\${pkgname}-\${pkgver}-\${arch}::"https://github.com/x71c9/tempesta/releases/download/v\${pkgver}/tempesta-\${arch}-unknown-linux-gnu.tar.gz")
               sha256sums=('SKIP')
               ;;
             *)
