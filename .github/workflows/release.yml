@@ -147,11 +147,11 @@ jobs:
 
           case "\$arch" in
             "x86_64")
-              source+=(\${pkgname}-\${pkgver}-\${arch}::"https://github.com/x71c9/tempesta/releases/download/v\${pkgver}/tempesta-\${arch}-unknown-linux-gnu.tar.gz")
+              source=("$pkgname-$pkgver.tar.gz::https://codeload.github.com/x71c9/$pkgname/tar.gz/refs/tags/v$pkgver")
               sha256sums=('SKIP')
               ;;
             "aarch64")
-              source+=(\${pkgname}-\${pkgver}-\${arch}::"https://github.com/x71c9/tempesta/releases/download/v\${pkgver}/tempesta-\${arch}-unknown-linux-gnu.tar.gz")
+              source=("$pkgname-$pkgver.tar.gz::https://codeload.github.com/x71c9/$pkgname/tar.gz/refs/tags/v$pkgver")
               sha256sums=('SKIP')
               ;;
             *)
