@@ -143,7 +143,7 @@ jobs:
           arch=('x86_64' 'aarch64')
           url="https://github.com/x71c9/tempesta"
           license=('MIT')
-          depends=('glibc')
+          depends=('glibc', 'rust')
           optdepends=('fzf' 'wofi')
           makedepends=('cargo')
 
