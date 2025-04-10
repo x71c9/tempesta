@@ -134,7 +134,7 @@ jobs:
           cd aur-tempesta
           version=${GITHUB_REF_NAME#v}
           cat > PKGBUILD <<EOF
-          pkgname=tempesta-bin
+          pkgname=tempesta
           pkgver=${version}
           pkgrel=1
           pkgdesc="The fastest and lightest bookmark manager CLI written in Rust"
@@ -157,9 +157,12 @@ jobs:
               exit 1
               ;;
           esac
-
+          build() {
+            cd "\$srcdir/\$pkgname-\$pkgver"
+            cargo build --release
+          } 
           package() {
-            install -Dm755 "\${srcdir}/tempesta" "\${pkgdir}/usr/bin/tempesta"
+            install -Dm755 "\${srcdir}/\${pkgname}/target/release/tempesta" "\${pkgdir}/usr/bin/tempesta"
           }
           EOF
           makepkg --printsrcinfo > .SRCINFO
