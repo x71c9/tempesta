@@ -142,6 +142,8 @@ jobs:
           url="https://github.com/x71c9/tempesta"
           license=('MIT')
           depends=('glibc')
+          optdepends=('fzf' 'wofi')
+          makedepends=('cargo')
 
           case "\$arch" in
             "x86_64")
@@ -157,12 +159,22 @@ jobs:
               exit 1
               ;;
           esac
+
+          prepare() {
+            cd "$pkgname-$pkgver"
+            export RUSTUP_TOOLCHAIN=stable
+            cargo fetch --locked --target "$(rustc -vV | sed -n 's/host: //p')"
+          }
+
           build() {
-            cd "\$srcdir/\$pkgname-\$pkgver"
-            cargo build --release
+            cd "$pkgname-$pkgver"
+            export RUSTUP_TOOLCHAIN=stable
+            export CARGO_TARGET_DIR=target
+            cargo build --frozen --release --all-features
           } 
           package() {
-            install -Dm755 "\${srcdir}/\${pkgname}/target/release/tempesta" "\${pkgdir}/usr/bin/tempesta"
+            cd "$pkgname-$pkgver"
+            install -Dm0755 -t "$pkgdir/usr/bin/" "target/release/$pkgname"
           }
           EOF
           makepkg --printsrcinfo > .SRCINFO
