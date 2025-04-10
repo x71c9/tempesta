@@ -153,7 +153,7 @@ jobs:
           prepare() {
             cd "\${pkgname}-\${pkgver}"
             export RUSTUP_TOOLCHAIN=stable
-            cargo fetch --locked --target "$(rustc -vV | sed -n 's/host: //p')"
+            cargo fetch --locked --target "\$(rustc -vV | sed -n 's/host: //p')"
           }
 
           build() {
@@ -164,9 +164,10 @@ jobs:
           } 
           package() {
             cd "\${pkgname}-\${pkgver}"
-            install -Dm0755 -t "\${pkgdir}/usr/bin/" "target/release/\${pkgname}"
+            install -Dm0755 -t "\${pkgdir}/usr/bin/\${pkgname}" "target/release/\${pkgname}"
           }
           EOF
+          cat PKGBUILD
           makepkg --printsrcinfo > .SRCINFO
           git config user.email "mail@x71c9.com"
           git config user.name "x71c9"
