@@ -148,7 +148,7 @@ jobs:
           makedepends=('rust')
 
           source=("\$pkgname-\$pkgver.tar.gz::https://codeload.github.com/x71c9/\$pkgname/tar.gz/refs/tags/v\$pkgver")
-          sha256sums=("\${sha256sum}")
+          sha256sums=("${sha256sum}")
 
           prepare() {
             cd "\$pkgname-\$pkgver"
