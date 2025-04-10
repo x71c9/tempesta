@@ -108,7 +108,7 @@ jobs:
     steps:
       - name: Install dependencies
         run: |
-          pacman -Syu --noconfirm base-devel git openssh sudo
+          pacman -Syu --noconfirm base-devel coreutils curl git openssh sudo
       - name: Setup SSH
         run: |
           mkdir -p ~/.ssh
@@ -133,6 +133,8 @@ jobs:
           sudo -E -H -u builduser bash <<'SCRIPT'
           cd aur-tempesta
           version=${GITHUB_REF_NAME#v}
+          curl -OL https://codeload.github.com/x71c9/tempesta/tar.gz/refs/tags/v${version}
+          sha256sum=$(sha256sum v${version} | awk '{print $1}')
           cat > PKGBUILD <<EOF
           pkgname=tempesta
           pkgver=${version}
@@ -145,20 +147,8 @@ jobs:
           optdepends=('fzf' 'wofi')
           makedepends=('cargo')
 
-          case "\$arch" in
-            "x86_64")
-              source+=(\${pkgname}-\${pkgver}-\${arch}::"https://github.com/x71c9/tempesta/releases/download/v\${pkgver}/tempesta-\${arch}-unknown-linux-gnu.tar.gz")
-              sha256sums=('SKIP')
-              ;;
-            "aarch64")
-              source+=(\${pkgname}-\${pkgver}-\${arch}::"https://github.com/x71c9/tempesta/releases/download/v\${pkgver}/tempesta-\${arch}-unknown-linux-gnu.tar.gz")
-              sha256sums=('SKIP')
-              ;;
-            *)
-              echo "Error: Unsupported architecture \$arch. Please open a github issue if you want to support it: https://github.com/x71c9/tempesta/issues" >&2
-              exit 1
-              ;;
-          esac
+          source=("\$pkgname-\$pkgver.tar.gz::https://codeload.github.com/x71c9/\$pkgname/tar.gz/refs/tags/v\$pkgver")
+          sha256sums=('${sha256sum}')
 
           prepare() {
             cd "$pkgname-$pkgver"
