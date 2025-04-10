@@ -145,7 +145,7 @@ jobs:
           license=('MIT')
           depends=('glibc')
           optdepends=('fzf' 'wofi')
-          makedepends=('rust', 'cargo')
+          makedepends=('rust' 'cargo')
 
           source=("\$pkgname-\$pkgver.tar.gz::https://codeload.github.com/x71c9/\$pkgname/tar.gz/refs/tags/v\$pkgver")
           sha256sums=('${sha256sum}')
