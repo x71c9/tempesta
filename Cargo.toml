@@ -9,9 +9,9 @@ license = "MIT"
 
 [dependencies]
 serde = { version = "1.0", features = ["derive"] }
-dirs = "4.0"
-webbrowser = "0.8"
-toml = "0.7"
+dirs = "6.0"
+webbrowser = "1.0.4"
+toml = "0.8"
 regex = "1"
 
 [package.metadata.release]
@@ -19,4 +19,3 @@ push = true
 publish = true
 tag-message = "chore(release): v{{version}}"
 pre-release-commit-message = "chore(release): release v{{version}}"
-

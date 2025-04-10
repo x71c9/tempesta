@@ -5,8 +5,6 @@ use std::fs::{self, File, OpenOptions};
 use std::io::{self, BufRead, BufReader, Write};
 use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
-use toml;
-use webbrowser;
 
 #[derive(Serialize, Deserialize)]
 struct Bookmark {
@@ -19,6 +17,7 @@ struct Config {
   git: bool,
   remote: Option<String>,
   dir: String,
+  finder: String,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -163,6 +162,39 @@ fn init() {
   if enable_autocomplete {
     activate_completion(vec![])
   }
+
+  // Select finder for tempesta open
+  print!("Which finder executable do you want to use? [fzf/wofi]: ");
+  io::stdout()
+    .flush()
+    .panic_on_error("Failed to flush stdout");
+  let mut finder_executable_input = String::new();
+  io::stdin()
+    .read_line(&mut finder_executable_input)
+    .panic_on_error("Failed to read input");
+  let finder_executable: String =
+    match finder_executable_input.trim().to_lowercase().as_str() {
+      "fzf" => {
+        let finder_executable_input = "fzf";
+        finder_executable_input.to_owned()
+      }
+      "wofi" => {
+        let finder_executable_input = "wofi";
+        finder_executable_input.to_owned()
+      }
+      _ => {
+        println!(
+          "Unsupported finder: {}, defaulting to fzf",
+          finder_executable_input.trim()
+        );
+        io::stdout()
+          .flush()
+          .panic_on_error("Failed to flush stdout");
+        let finder_executable_input = "fzf";
+        finder_executable_input.to_owned()
+      }
+    };
+
   print!("Do you want to use Git for tracking bookmarks? (Y/n): ");
   io::stdout()
     .flush()
@@ -176,6 +208,7 @@ fn init() {
     git: use_git,
     remote: None,
     dir: storage_path,
+    finder: finder_executable,
   };
   save_config(&config);
   if use_git {
@@ -201,7 +234,7 @@ fn prompt_valid_bookmark_store_path() -> String {
     // Default path if the user input is empty
     let storage_path = if storage_path.is_empty() {
       let home_dir = dirs::home_dir().expect("Could not find home directory");
-      let mut default_dir = PathBuf::from(home_dir);
+      let mut default_dir = home_dir;
       default_dir.push(".bookmark-store");
       default_dir.to_string_lossy().into_owned()
     } else {
@@ -215,7 +248,7 @@ fn prompt_valid_bookmark_store_path() -> String {
       }
 
       // Check if the path has write permission
-      if !check_write_permission(&path) {
+      if !check_write_permission(path) {
         println!(
           "No write permission for the specified path: {}",
           expanded.to_string_lossy()
@@ -255,7 +288,7 @@ fn add(args: Vec<String>) {
   }
   let relative_path = &args[2];
   validate_path(relative_path);
-  let toml_file_path = get_bookmark_file_path(&relative_path);
+  let toml_file_path = get_bookmark_file_path(relative_path);
   if toml_file_path.exists() {
     print!(
       "Bookmark already exists at {}. Overwrite? (y/N): ",
@@ -299,17 +332,15 @@ fn r#move(args: Vec<String>) {
   validate_path(relative_path_from);
   let relative_path_to = &args[3];
   validate_path(relative_path_to);
-  let toml_from_file_path = get_bookmark_file_path(&relative_path_from);
+  let toml_from_file_path = get_bookmark_file_path(relative_path_from);
   if !toml_from_file_path.exists() {
     eprintln!("Path {:?} do not exists", &toml_from_file_path.to_str());
     std::process::exit(1);
   }
-  let toml_to_file_path = get_bookmark_file_path(&relative_path_to);
-  if toml_to_file_path.exists() {
-    if !prompt_for_overwrite(&toml_to_file_path) {
-      println!("Move operation aborted.");
-      std::process::exit(0);
-    }
+  let toml_to_file_path = get_bookmark_file_path(relative_path_to);
+  if toml_to_file_path.exists() && !prompt_for_overwrite(&toml_to_file_path) {
+    println!("Move operation aborted.");
+    std::process::exit(0);
   }
 
   if let Some(parent) = toml_to_file_path.parent() {
@@ -347,7 +378,7 @@ fn update(args: Vec<String>) {
   }
   let relative_path = &args[2];
   validate_path(relative_path);
-  let toml_file_path = get_bookmark_file_path(&relative_path);
+  let toml_file_path = get_bookmark_file_path(relative_path);
   if !toml_file_path.exists() {
     eprintln!("Path {:?} do not exists", &toml_file_path.to_str());
     std::process::exit(1);
@@ -364,8 +395,8 @@ fn update(args: Vec<String>) {
 
 fn open(args: Vec<String>) {
   let relative_path = if args.len() < 3 {
-    // No path provided, try to invoke fzf
-    if let Some(selected_path) = run_fzf_if_available() {
+    // No path provided, try to invoke finder
+    if let Some(selected_path) = run_finder_if_available() {
       selected_path
     } else {
       eprintln!("Usage: tempesta open <path>");
@@ -381,9 +412,10 @@ fn open(args: Vec<String>) {
   webbrowser::open(&url).panic_on_error("Failed to open browser");
 }
 
-fn run_fzf_if_available() -> Option<String> {
-  if !is_fzf_available() {
-    eprintln!("fzf not found in PATH");
+fn run_finder_if_available() -> Option<String> {
+  let config = load_config();
+  if !is_finder_available() {
+    eprintln!("Selected finder {} not found in PATH", config.finder);
     return None;
   }
   let bookmarks = get_toml_bookmark_files();
@@ -399,17 +431,41 @@ fn run_fzf_if_available() -> Option<String> {
       let full_path = format!("{}.toml", &current_path.display());
       let url =
         extract_url_from_toml(&full_path).unwrap_or_else(|_| "N/A".to_string());
-      let dim_url = format!("\x1b[2m :: {}\x1b[0m", url);
+      let dim_url = {
+        if config.finder == "wofi" {
+          let dim_url = format!(" :: {}", url);
+          dim_url
+        } else {
+          let dim_url = format!("\x1b[2m :: {}\x1b[0m", url);
+          dim_url
+        }
+      };
       Some(format!("{}{}", path, dim_url))
     })
     .collect::<Vec<_>>()
     .join("\n");
-  let mut child = Command::new("fzf")
-    .arg("--ansi")
-    .stdin(Stdio::piped())
-    .stdout(Stdio::piped())
-    .spawn()
-    .panic_on_error("Failed to start fzf");
+  let mut child = {
+    if config.finder == "wofi" {
+      let command = Command::new("wofi")
+        .arg("--dmenu")
+        .arg("--insensitive")
+        .arg("--width")
+        .arg("65%")
+        .stdin(Stdio::piped())
+        .stdout(Stdio::piped())
+        .spawn()
+        .panic_on_error("Failed to start wofi");
+      command
+    } else {
+      let command = Command::new("fzf")
+        .arg("--ansi")
+        .stdin(Stdio::piped())
+        .stdout(Stdio::piped())
+        .spawn()
+        .panic_on_error("Failed to start fzf");
+      command
+    }
+  };
   if let Some(mut stdin) = child.stdin.take() {
     stdin.write_all(decorated.as_bytes()).ok()?;
   }
@@ -437,8 +493,15 @@ fn extract_url_from_toml(
     .ok_or_else(|| "Missing or invalid `url`".into())
 }
 
-fn is_fzf_available() -> bool {
-  Command::new("fzf").arg("--version").output().is_ok()
+fn is_finder_available() -> bool {
+  let config = load_config();
+  if config.finder == "fzf" {
+    Command::new("fzf").arg("--version").output().is_ok()
+  } else if config.finder == "wofi" {
+    Command::new("wofi").arg("--version").output().is_ok()
+  } else {
+    return false;
+  }
 }
 
 fn get_toml_bookmark_files() -> Vec<String> {
@@ -451,7 +514,7 @@ fn get_toml_bookmark_files() -> Vec<String> {
         if path.is_dir() {
           visit_dir(&path, root_dir, bookmarks); // recurse
         } else if path.is_file()
-          && path.extension().map_or(false, |ext| ext == "toml")
+          && path.extension().is_some_and(|ext| ext == "toml")
         {
           if let Ok(relative_path) = path.strip_prefix(root_dir) {
             if let Some(relative_str) = relative_path.to_str() {
@@ -477,7 +540,7 @@ fn remove(args: Vec<String>) {
     std::process::exit(1);
   }
   let relative_path = &args[2];
-  let toml_file_path = get_bookmark_file_path(&relative_path);
+  let toml_file_path = get_bookmark_file_path(relative_path);
   if toml_file_path.exists() {
     fs::remove_file(&toml_file_path).panic_on_error("Failed to remove file");
     println!("Bookmark removed successfully as {}", &relative_path);
@@ -568,7 +631,7 @@ fn edit(args: Vec<String>) {
 fn get_config_file_path() -> PathBuf {
   let home_dir =
     dirs::home_dir().panic_on_error("Could not find home directory");
-  let mut config_path = PathBuf::from(home_dir);
+  let mut config_path = home_dir;
   config_path.push(".config/tempesta");
   fs::create_dir_all(&config_path)
     .panic_on_error("Failed to create config directory");
@@ -629,6 +692,7 @@ fn handle_git(previous_config: &Config) {
     git: true,
     remote: git_remote,
     dir: previous_config.dir.clone(),
+    finder: previous_config.finder.clone(),
   };
   save_config(&config);
 }
@@ -702,7 +766,8 @@ fn expand_tilde(path: &str) -> PathBuf {
 }
 
 fn validate_path(relative_path: &str) {
-  let re = Regex::new(r"^[a-zA-Z0-9_/.-]+$").panic_on_error("Invalid path");
+  let re =
+    Regex::new(r"^[a-zåäöA-ZÅÄÖ0-9_/.-]+$").panic_on_error("Invalid path");
   if !re.is_match(relative_path) {
     panic!("Invalid path. Please avoid spaces and special characters.");
   }
@@ -735,13 +800,13 @@ fn get_bookmark_file_path(relative_path: &String) -> PathBuf {
   fs::create_dir_all(&bookmark_store_dir_path)
     .panic_on_error("Failed to create directory");
   bookmark_store_dir_path.push(file_name);
-  return bookmark_store_dir_path;
+  bookmark_store_dir_path
 }
 
-fn store_bookmark(toml_file_path: &PathBuf, url: &String, tags: &Vec<String>) {
+fn store_bookmark(toml_file_path: &PathBuf, url: &str, tags: &[String]) {
   let bookmark = Bookmark {
-    url: url.clone(),
-    tags: tags.clone(),
+    url: url.to_owned(),
+    tags: tags.to_owned(),
   };
   let toml_content =
     toml::to_string(&bookmark).panic_on_error("Failed to serialize bookmark");
@@ -754,9 +819,9 @@ fn get_url(relative_path: &String) -> String {
   let toml_file_path = get_bookmark_file_path(relative_path);
   let toml_content =
     fs::read_to_string(toml_file_path).panic_on_error("Failed to read TOML");
-  let bookmakr: Bookmark = toml::from_str(&toml_content)
+  let bookmark: Bookmark = toml::from_str(&toml_content)
     .panic_on_error("Failed to parse TOML content");
-  return bookmakr.url;
+  bookmark.url
 }
 
 fn push_to_origin() {
@@ -768,7 +833,7 @@ fn push_to_origin() {
   git_command(&["push", "-u", "--all"], "Cannot push to origin");
 }
 
-fn git_commit(comment: &String) {
+fn git_commit(comment: &str) {
   git_command(&["add", "-A"], "Failed to add file to git stage");
   git_command(&["commit", "-m", comment], "Failed to commit to git");
   push_to_origin();
@@ -791,9 +856,9 @@ const FISH_COMPLETION: &str =
   include_str!("completions/tempesta-completion.fish.sh");
 
 fn detect_shell() -> Option<String> {
-  env::var("SHELL")
-    .ok()
-    .and_then(|shell_path| shell_path.split('/').last().map(|s| s.to_string()))
+  env::var("SHELL").ok().and_then(|shell_path| {
+    shell_path.split('/').next_back().map(|s| s.to_string())
+  })
 }
 
 fn write_completion(shell: Shell) -> io::Result<PathBuf> {
@@ -823,18 +888,17 @@ fn print_source_completion(shell: Shell) {
 }
 
 fn get_profile_path(shell: Shell) -> PathBuf {
-  let profile_path = match shell {
+  match shell {
     Shell::Zsh => home_dir_file(".zshrc"),
     Shell::Bash => home_dir_file(".bash_profile"),
     Shell::Fish => home_dir_file(".config/fish/config.fish"),
   }
-  .expect("Could not determine home directory or file path!");
-  return profile_path;
+  .expect("Could not determine home directory or file path!")
 }
 
 fn update_shell_profile(shell: Shell, completion_path: &str) -> io::Result<()> {
   let profile_path = get_profile_path(shell);
-  return update_profile_file(&profile_path, shell, completion_path);
+  update_profile_file(&profile_path, shell, completion_path)
 }
 
 fn home_dir_file(filename: &str) -> Option<PathBuf> {
@@ -923,7 +987,7 @@ fn cleanup_empty_parents(starting_dir: &Path) -> std::io::Result<()> {
   Ok(())
 }
 
-fn prompt_for_overwrite(destination: &PathBuf) -> bool {
+fn prompt_for_overwrite(destination: &Path) -> bool {
   print!(
     "A bookmark already exists at {}. Overwrite? [Y/n]: ",
     destination.display()
