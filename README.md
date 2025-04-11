@@ -251,15 +251,12 @@ bookmark and open it in the browser
 
 ```bash
 # with AWK
-tempesta open "$(tempesta list | fzf | awk -F ' *:: *' '{print $1}')"
+tempesta list | fzf | awk -F ' *:: *' '{print $1}' | xargs tempesta open
 # with SED
-tempesta open "$(tempesta list | fzf | sed 's/ *::.*//')"
+tempesta list | fzf | sed 's/ *::.*//' | xargs tempesta open
 ```
 
-To make an alias you will probably need a function like:
+An alias like this might be useful to open bookmarks:
 ```bash
-tempo() {
-    tempesta open "$(tempesta list | fzf | sed 's/ *::.*//')"
-}
+alias tempo="tempesta list | fzf | sed 's/ *::.*//' | xargs tempesta open"
 ```
-and then run `tempo`.
