@@ -46,9 +46,6 @@ It can also track all the changes using `git`.
 
 </details>
 
-- [FZF](#fzf)
-- [WOFI](#wofi)
-
 ## How to use it
 
 #### Init
@@ -237,26 +234,3 @@ t() {
 }
 complete -o default -o nospace -F _tempesta t
 ```
-
-### FZF
-
-If [`fzf`](https://github.com/junegunn/fzf) is installed on your system and the
-method `open` is called without arguments:
-
-```bash
-tempesta open
-```
-
-it will start a fuzzy find of the bookmark.
-
-A useful alias can be made for this:
-
-```bash
-alias to='tempesta o'
-```
-
-### Wofi
-
-If [`wofi`](https://github.com/SimplyCEO/wofi) is installed on your system and
-was selected during init as finder, `tempesta open` will create a graphical
-fuzzy finder window instead of one in the terminal.

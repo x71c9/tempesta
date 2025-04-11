@@ -4,7 +4,7 @@ use std::env;
 use std::fs::{self, File, OpenOptions};
 use std::io::{self, BufRead, BufReader, Write};
 use std::path::{Path, PathBuf};
-use std::process::{Command, Stdio};
+use std::process::Command;
 
 #[derive(Serialize, Deserialize)]
 struct Bookmark {
@@ -17,7 +17,6 @@ struct Config {
   git: bool,
   remote: Option<String>,
   dir: String,
-  finder: String,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -164,38 +163,6 @@ fn init() {
     activate_completion(vec![])
   }
 
-  // Select finder for tempesta open
-  print!("Which finder executable do you want to use? [fzf/wofi]: ");
-  io::stdout()
-    .flush()
-    .panic_on_error("Failed to flush stdout");
-  let mut finder_executable_input = String::new();
-  io::stdin()
-    .read_line(&mut finder_executable_input)
-    .panic_on_error("Failed to read input");
-  let finder_executable: String =
-    match finder_executable_input.trim().to_lowercase().as_str() {
-      "fzf" => {
-        let finder_executable_input = "fzf";
-        finder_executable_input.to_owned()
-      }
-      "wofi" => {
-        let finder_executable_input = "wofi";
-        finder_executable_input.to_owned()
-      }
-      _ => {
-        println!(
-          "Unsupported finder: {}, defaulting to fzf",
-          finder_executable_input.trim()
-        );
-        io::stdout()
-          .flush()
-          .panic_on_error("Failed to flush stdout");
-        let finder_executable_input = "fzf";
-        finder_executable_input.to_owned()
-      }
-    };
-
   print!("Do you want to use Git for tracking bookmarks? (Y/n): ");
   io::stdout()
     .flush()
@@ -209,7 +176,6 @@ fn init() {
     git: use_git,
     remote: None,
     dir: storage_path,
-    finder: finder_executable,
   };
   save_config(&config);
   if use_git {
@@ -435,88 +401,15 @@ fn list(args: Vec<String>) {
 fn open(args: Vec<String>) {
   let relative_path = if args.len() < 3 {
     // No path provided, try to invoke finder
-    if let Some(selected_path) = run_finder_if_available() {
-      selected_path
-    } else {
-      eprintln!("Usage: tempesta open <path>");
-      std::process::exit(1);
-    }
+    eprintln!("Usage: tempesta open <path>");
+    std::process::exit(1);
   } else {
     args[2].clone()
   };
-
   validate_path(&relative_path);
   let url = get_url(&relative_path);
   validate_url(&url);
   webbrowser::open(&url).panic_on_error("Failed to open browser");
-}
-
-fn run_finder_if_available() -> Option<String> {
-  let config = load_config();
-  if !is_finder_available() {
-    eprintln!("Selected finder {} not found in PATH", config.finder);
-    return None;
-  }
-  let bookmarks = get_toml_bookmark_files(None);
-  if bookmarks.is_empty() {
-    eprintln!("No bookmarks found.");
-    return None;
-  }
-  let decorated = bookmarks
-    .iter()
-    .filter_map(|path| {
-      let mut current_path = get_bookmark_store_dir_path();
-      current_path.push(PathBuf::from(path));
-      let full_path = format!("{}.toml", &current_path.display());
-      let url =
-        extract_url_from_toml(&full_path).unwrap_or_else(|_| "N/A".to_string());
-      let dim_url = {
-        if config.finder == "wofi" {
-          let dim_url = format!(" :: {}", url);
-          dim_url
-        } else {
-          let dim_url = format!("\x1b[2m :: {}\x1b[0m", url);
-          dim_url
-        }
-      };
-      Some(format!("{}{}", path, dim_url))
-    })
-    .collect::<Vec<_>>()
-    .join("\n");
-  let mut child = {
-    if config.finder == "wofi" {
-      let command = Command::new("wofi")
-        .arg("--dmenu")
-        .arg("--insensitive")
-        .arg("--width")
-        .arg("65%")
-        .stdin(Stdio::piped())
-        .stdout(Stdio::piped())
-        .spawn()
-        .panic_on_error("Failed to start wofi");
-      command
-    } else {
-      let command = Command::new("fzf")
-        .arg("--ansi")
-        .stdin(Stdio::piped())
-        .stdout(Stdio::piped())
-        .spawn()
-        .panic_on_error("Failed to start fzf");
-      command
-    }
-  };
-  if let Some(mut stdin) = child.stdin.take() {
-    stdin.write_all(decorated.as_bytes()).ok()?;
-  }
-  let output = child.wait_with_output().ok()?;
-  if output.status.success() {
-    let selected = String::from_utf8_lossy(&output.stdout).trim().to_string();
-    if !selected.is_empty() {
-      // Extract just the filename (strip the " - url" part if necessary)
-      return Some(selected.split(" :: ").next()?.to_string());
-    }
-  }
-  None
 }
 
 // Example function to extract the URL from the TOML file
@@ -530,17 +423,6 @@ fn extract_url_from_toml(
     .and_then(|v| v.as_str())
     .map(String::from)
     .ok_or_else(|| "Missing or invalid `url`".into())
-}
-
-fn is_finder_available() -> bool {
-  let config = load_config();
-  if config.finder == "fzf" {
-    Command::new("fzf").arg("--version").output().is_ok()
-  } else if config.finder == "wofi" {
-    Command::new("wofi").arg("--version").output().is_ok()
-  } else {
-    return false;
-  }
 }
 
 fn get_toml_bookmark_files(sub_path: Option<String>) -> Vec<String> {
@@ -738,7 +620,6 @@ fn handle_git(previous_config: &Config) {
     git: true,
     remote: git_remote,
     dir: previous_config.dir.clone(),
-    finder: previous_config.finder.clone(),
   };
   save_config(&config);
 }
