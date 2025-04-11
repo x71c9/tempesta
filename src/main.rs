@@ -92,7 +92,7 @@ fn main() {
     "list" | "l" => list(args),
     "edit" | "e" => edit(args),
     "remove" | "r" => remove(args),
-    "completion" => completion(args),
+    "activate-completion" => activate_completion(args),
     "config" | "c" => config(),
     "--version" | "-v" => print_version(),
     _ => {
@@ -117,7 +117,7 @@ fn config() {
   println!("Bookmark store directory: {}", config.dir);
 }
 
-fn completion(args: Vec<String>) {
+fn activate_completion(args: Vec<String>) {
   let detected_shell = detect_shell()
     .as_deref()
     .and_then(Shell::from_str)
@@ -136,7 +136,6 @@ fn completion(args: Vec<String>) {
     .panic_on_error("Completion path is not valid UTF-8");
   update_shell_profile(selected_shell, completion_path_str)
     .panic_on_error("Cannot update shell profile");
-  source_completion(selected_shell);
 }
 
 fn print_version() {
@@ -161,7 +160,7 @@ fn init() {
     "n" | "no"
   );
   if enable_autocomplete {
-    completion(vec![])
+    activate_completion(vec![])
   }
 
   print!("Do you want to use Git for tracking bookmarks? (Y/n): ");
@@ -803,28 +802,16 @@ fn write_completion(shell: Shell) -> io::Result<PathBuf> {
     shell.to_str(),
     file_path.display()
   );
+  print_source_completion(shell);
   Ok(file_path)
 }
 
-fn source_completion(shell: Shell) {
+fn print_source_completion(shell: Shell) {
   let profile_path = get_profile_path(shell);
-  let source_line = format!("source {}", profile_path.display());
-
-  // Append the source line if not already there
-  if let Ok(mut contents) = fs::read_to_string(&profile_path) {
-    if !contents.contains(&source_line) {
-      contents.push_str(&format!("\n{}\n", source_line));
-      if let Err(e) = fs::write(&profile_path, contents) {
-        eprintln!("Failed to update {}: {}", profile_path.display(), e);
-      } else {
-        println!("Appended source line to {}", profile_path.display());
-      }
-    } else {
-      println!("Source line already present in {}", profile_path.display());
-    }
-  } else {
-    eprintln!("Unable to read profile file at {}", profile_path.display());
-  }
+  println!(
+    "\x1b[1mFor activating autocompletion you can do one of the following:\n- Restart the terminal.\n- Run: `source {}`\x1b[0m",
+    profile_path.display()
+  )
 }
 
 fn get_profile_path(shell: Shell) -> PathBuf {

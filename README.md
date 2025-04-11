@@ -46,8 +46,6 @@ It can also track all the changes using `git`.
 
 </details>
 
-- [Completion](#completion)
-
 ## How to use it
 
 #### Init
@@ -237,13 +235,3 @@ t() {
 }
 complete -o default -o nospace -F _tempesta t
 ```
-
-### Completion
-
-During initialization Tempesta will install the autocompletion files. In order
-to reload the files you can run:
-
-```bash
-tempesta completion
-```
-
