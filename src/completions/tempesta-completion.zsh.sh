@@ -10,7 +10,7 @@ _tempesta () {
     shift words
 
     case "${cmd}" in
-      add|a|edit|remove|open|update|e|r|o|u)
+      add|edit|list|open|remove|update|a|e|l|o|r|u)
         _arguments : "1:bookmark:_tempesta_complete_entries_helper"
         ;;
       move|m)
