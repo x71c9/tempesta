@@ -3,7 +3,7 @@ _tempesta() {
 
     # When only the command is entered, complete the subcommands.
     if [ $COMP_CWORD -eq 1 ]; then
-        local subcommands="add edit move open remove update a e m o r u"
+        local subcommands="add edit list move open remove update a e l m o r u"
         COMPREPLY=( $( compgen -W "$subcommands" -- "${COMP_WORDS[1]}" ) )
         return 0
     fi

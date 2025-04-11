@@ -26,6 +26,7 @@ _tempesta () {
     subcommands=(
       "\[a\]dd:Add a new bookmark"
       "\[e\]dit:Edit an existing bookmark"
+      "\[l\]ist:List bookmarks"
       "\[m\]ove:Move an existing bookmark"
       "\[o\]pen:Open a bookmark"
       "\[r\]emove:Remove a bookmark"

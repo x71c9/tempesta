@@ -17,11 +17,12 @@ It can also track all the changes using `git`.
 
 - [Init](#init)
 - [Add a bookmark](#add-a-bookmark)
-- [Update a bookmark](#update-a-bookmark)
 - [Edit a bookmark](#edit-a-bookmark)
-- [Open the URL in the browser](#open-the-url-in-the-browser)
+- [List bookmarks](#list-bookmarks)
 - [Move a bookmark](#move-a-bookmark)
+- [Open the URL in the browser](#open-the-url-in-the-browser)
 - [Remove a bookmark](#remove-a-bookmark)
+- [Update a bookmark](#update-a-bookmark)
 
 </details>
 
@@ -68,14 +69,6 @@ tempesta add <local-path> <url>
 tempesta add search-engines/google "http://google.com/"
 ```
 
-#### Update a bookmark
-
-```bash
-tempesta update <local-path> <url>
-
-tempesta update search-engines/google "https://google.com"
-```
-
 #### Edit a bookmark in your editor (it check $EDITOR variable)
 
 ```bash
@@ -84,12 +77,31 @@ tempesta edit <local-path>
 tempesta edit search-engines/google
 ```
 
-#### Open the URL in the browser
+#### List bookmarks
 
 ```bash
-tempesta open <local-path>
+tempesta list <local-path>
 
-tempesta open search-engines/google
+tempesta list search-engines/
+```
+
+Without arguments it lists all the bookmarks
+```bash
+tempesta list
+```
+
+List as an parameter that can be passed with the flag `--divisor` that divides
+the path name to the actual url:
+```bash
+tempesta list search-engines/ --divisor=" --- "
+
+tempesta list search-engines/ --divisor " --- "
+```
+
+This prints:
+```bash
+search-engines/google --- https://google.com/
+search-engines/duck --- https://duckduckgo.com/
 ```
 
 #### Move a bookmark
@@ -100,12 +112,28 @@ tempesta move <local-path>
 tempesta move search-engines/google query-engines/google
 ```
 
+#### Open the URL in the browser
+
+```bash
+tempesta open <local-path>
+
+tempesta open search-engines/google
+```
+
 #### Remove a bookmark
 
 ```bash
 tempesta remove <local-path>
 
 tempesta remove search-engines/google
+```
+
+#### Update a bookmark
+
+```bash
+tempesta update <local-path> <url>
+
+tempesta update search-engines/google "https://google.com"
 ```
 
 ## Shortcut

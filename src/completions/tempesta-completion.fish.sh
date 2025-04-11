@@ -22,19 +22,21 @@ end
 # Subcommands
 complete -c tempesta -n '__fish_use_subcommand' -a "add" -d "Add a new bookmark"
 complete -c tempesta -n '__fish_use_subcommand' -a "edit" -d "Edit a bookmark"
-complete -c tempesta -n '__fish_use_subcommand' -a "open" -d "Open a bookmark"
+complete -c tempesta -n '__fish_use_subcommand' -a "list" -d "List bookmarks"
 complete -c tempesta -n '__fish_use_subcommand' -a "move" -d "Move a bookmark"
+complete -c tempesta -n '__fish_use_subcommand' -a "open" -d "Open a bookmark"
 complete -c tempesta -n '__fish_use_subcommand' -a "remove" -d "Remove a bookmark"
 complete -c tempesta -n '__fish_use_subcommand' -a "update" -d "Update a bookmark"
 complete -c tempesta -n '__fish_use_subcommand' -a "a" -d "Shortcut for add"
 complete -c tempesta -n '__fish_use_subcommand' -a "e" -d "Shortcut for edit"
+complete -c tempesta -n '__fish_use_subcommand' -a "l" -d "Shortcut for list"
 complete -c tempesta -n '__fish_use_subcommand' -a "m" -d "Shortcut for move"
 complete -c tempesta -n '__fish_use_subcommand' -a "o" -d "Shortcut for open"
 complete -c tempesta -n '__fish_use_subcommand' -a "r" -d "Shortcut for remove"
 complete -c tempesta -n '__fish_use_subcommand' -a "u" -d "Shortcut for update"
 
 # Completion for entries for all subcommands
-for cmd in add edit open move remove update a e m o r u
+for cmd in add edit list move open remove update a e l m o r u
     complete -c tempesta -n "__fish_seen_subcommand_from $cmd" -a "(_tempesta_complete_entries)"
 end
 

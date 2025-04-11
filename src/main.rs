@@ -90,6 +90,7 @@ fn main() {
     "update" | "u" => update(args),
     "move" | "m" => r#move(args),
     "open" | "o" => open(args),
+    "list" | "l" => list(args),
     "edit" | "e" => edit(args),
     "remove" | "r" => remove(args),
     "activate-completion" => activate_completion(args),
@@ -393,6 +394,44 @@ fn update(args: Vec<String>) {
   println!("Bookmark updated successfully as {}", &relative_path);
 }
 
+fn list(args: Vec<String>) {
+  let bookmarks = if args.len() > 2 {
+    get_toml_bookmark_files(Some(args[2].clone()))
+  } else {
+    get_toml_bookmark_files(None)
+  };
+  if bookmarks.is_empty() {
+    eprintln!("No bookmarks found.");
+    return;
+  }
+  let mut divisor = " :: ".to_string();
+
+  // Parse args to find --divisor value
+  let mut args_iter = args.iter();
+  while let Some(arg) = args_iter.next() {
+    if arg == "--divisor" {
+      if let Some(value) = args_iter.next() {
+        divisor = value.to_string();
+      }
+    } else if arg.starts_with("--divisor=") {
+      if let Some(value) = arg.splitn(2, '=').nth(1) {
+        divisor = value.to_string();
+      }
+    }
+  }
+  let formatted = bookmarks.iter().filter_map(|path| {
+    let mut current_path = get_bookmark_store_dir_path();
+    current_path.push(PathBuf::from(path));
+    let full_path = format!("{}.toml", &current_path.display());
+    let url =
+      extract_url_from_toml(&full_path).unwrap_or_else(|_| "N/A".to_string());
+    Some(format!("{}{}{}", path, divisor, url))
+  });
+  for line in formatted {
+    println!("{}", line);
+  }
+}
+
 fn open(args: Vec<String>) {
   let relative_path = if args.len() < 3 {
     // No path provided, try to invoke finder
@@ -418,7 +457,7 @@ fn run_finder_if_available() -> Option<String> {
     eprintln!("Selected finder {} not found in PATH", config.finder);
     return None;
   }
-  let bookmarks = get_toml_bookmark_files();
+  let bookmarks = get_toml_bookmark_files(None);
   if bookmarks.is_empty() {
     eprintln!("No bookmarks found.");
     return None;
@@ -504,8 +543,16 @@ fn is_finder_available() -> bool {
   }
 }
 
-fn get_toml_bookmark_files() -> Vec<String> {
+fn get_toml_bookmark_files(sub_path: Option<String>) -> Vec<String> {
   let root_dir = get_bookmark_store_dir_path();
+  let search_dir = match &sub_path {
+    Some(sub) => {
+      let mut d = root_dir.clone();
+      d.push(sub);
+      d
+    }
+    None => root_dir.clone(),
+  };
   let mut bookmarks = Vec::new();
   fn visit_dir(dir: &PathBuf, root_dir: &PathBuf, bookmarks: &mut Vec<String>) {
     if let Ok(entries) = fs::read_dir(dir) {
@@ -518,7 +565,6 @@ fn get_toml_bookmark_files() -> Vec<String> {
         {
           if let Ok(relative_path) = path.strip_prefix(root_dir) {
             if let Some(relative_str) = relative_path.to_str() {
-              // Strip .toml extension
               let without_extension = relative_str.trim_end_matches(".toml");
               bookmarks.push(without_extension.to_string());
             }
@@ -527,9 +573,9 @@ fn get_toml_bookmark_files() -> Vec<String> {
       }
     }
   }
-  visit_dir(&root_dir, &root_dir, &mut bookmarks);
+  visit_dir(&search_dir, &root_dir, &mut bookmarks);
   if bookmarks.is_empty() {
-    eprintln!("No .toml files found in {:?}", root_dir);
+    eprintln!("No .toml files found in {:?}", search_dir);
   }
   bookmarks
 }
