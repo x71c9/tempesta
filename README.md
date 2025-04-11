@@ -46,6 +46,8 @@ It can also track all the changes using `git`.
 
 </details>
 
+- [fzf](#fzf)
+
 ## How to use it
 
 #### Init
@@ -235,3 +237,29 @@ t() {
 }
 complete -o default -o nospace -F _tempesta t
 ```
+
+## fzf
+
+If you are using `fzf` you can pipe the result of `tempesta list` to it:
+
+```bash
+tempesta list | fzf
+```
+
+And you can use it in combination with `tempesta open` in order to fuzzy find a
+bookmark and open it in the browser
+
+```bash
+# with AWK
+tempesta open "$(tempesta list | fzf | awk -F ' *:: *' '{print $1}')"
+# with SED
+tempesta open "$(tempesta list | fzf | sed 's/ *::.*//')"
+```
+
+To make an alias you will probably need a function like:
+```bash
+tempo() {
+    tempesta open "$(tempesta list | fzf | sed 's/ *::.*//')"
+}
+```
+and then run `tempo`.
