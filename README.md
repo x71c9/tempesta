@@ -140,8 +140,9 @@ You can use the initial of the methods instead of their full identifier:
 ```bash
 [a]dd     -- Add a new bookmark
 [e]dit    -- Edit an existing bookmark
-[o]pen    -- Open a bookmark
+[l]ist    -- List bookmarks
 [m]ove    -- Move a bookmark
+[o]pen    -- Open a bookmark
 [r]emove  -- Remove a bookmark
 [u]pdate  -- Update an existing bookmark
 ```
