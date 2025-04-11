@@ -84,21 +84,21 @@ fn main() {
   }
   let command = &args[1];
   match command.as_str() {
-    "init" | "i" => init(),
     "add" | "a" => add(args),
-    "update" | "u" => update(args),
+    "completion" => completion(args),
+    "config" | "c" => config(),
+    "edit" | "e" => edit(args),
+    "init" | "i" => init(),
+    "list" | "l" => list(args),
     "move" | "m" => r#move(args),
     "open" | "o" => open(args),
-    "list" | "l" => list(args),
-    "edit" | "e" => edit(args),
     "remove" | "r" => remove(args),
-    "activate-completion" => activate_completion(args),
-    "config" | "c" => config(),
+    "update" | "u" => update(args),
     "--version" | "-v" => print_version(),
     _ => {
       eprintln!("Unknown command: {}", command);
       eprintln!(
-        "Available commands: [a]dd, [u]pdate, [o]pen, [e]dit, [r]emove"
+        "Available commands: [a]dd, [e]dit, [l]ist, [m]ove, [o]pen, [r]emove, [u]pdate"
       );
       std::process::exit(1);
     }
@@ -117,7 +117,7 @@ fn config() {
   println!("Bookmark store directory: {}", config.dir);
 }
 
-fn activate_completion(args: Vec<String>) {
+fn completion(args: Vec<String>) {
   let detected_shell = detect_shell()
     .as_deref()
     .and_then(Shell::from_str)
@@ -160,7 +160,7 @@ fn init() {
     "n" | "no"
   );
   if enable_autocomplete {
-    activate_completion(vec![])
+    completion(vec![])
   }
 
   print!("Do you want to use Git for tracking bookmarks? (Y/n): ");
