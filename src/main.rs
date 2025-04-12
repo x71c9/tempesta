@@ -1,8 +1,8 @@
 use regex::Regex;
 use serde::{Deserialize, Serialize};
 use std::env;
-use std::fs::{self, File, OpenOptions};
-use std::io::{self, BufRead, BufReader, Write};
+use std::fs::{self, File};
+use std::io::{self, Write};
 use std::path::{Path, PathBuf};
 use std::process::Command;
 
@@ -128,14 +128,8 @@ fn completion(args: Vec<String>) {
       selected_shell = shell;
     }
   }
-  println!("Selected shell: {}", selected_shell.to_str());
-  let completion_path =
-    write_completion(selected_shell).panic_on_error("Cannot write completion");
-  let completion_path_str = completion_path
-    .to_str()
-    .panic_on_error("Completion path is not valid UTF-8");
-  update_shell_profile(selected_shell, completion_path_str)
-    .panic_on_error("Cannot update shell profile");
+  let script = selected_shell.completion_script();
+  println!("{}", script)
 }
 
 fn print_version() {
@@ -786,107 +780,6 @@ fn detect_shell() -> Option<String> {
   env::var("SHELL").ok().and_then(|shell_path| {
     shell_path.split('/').next_back().map(|s| s.to_string())
   })
-}
-
-fn write_completion(shell: Shell) -> io::Result<PathBuf> {
-  let target_dir = dirs::config_dir()
-    .panic_on_error("Failed to get config dir")
-    .join("tempesta/completions");
-  fs::create_dir_all(&target_dir)?;
-  let file_path = target_dir.join(shell.filename());
-  let script = shell.completion_script();
-  let mut file = fs::File::create(&file_path)?;
-  file.write_all(script.as_bytes())?;
-  println!(
-    "Completion for {} written to {}",
-    shell.to_str(),
-    file_path.display()
-  );
-  print_source_completion(shell);
-  Ok(file_path)
-}
-
-fn print_source_completion(shell: Shell) {
-  let profile_path = get_profile_path(shell);
-  println!(
-    "\x1b[1mFor activating autocompletion you can do one of the following:\n- Restart the terminal.\n- Run: `source {}`\x1b[0m",
-    profile_path.display()
-  )
-}
-
-fn get_profile_path(shell: Shell) -> PathBuf {
-  match shell {
-    Shell::Zsh => home_dir_file(".zshrc"),
-    Shell::Bash => home_dir_file(".bash_profile"),
-    Shell::Fish => home_dir_file(".config/fish/config.fish"),
-  }
-  .expect("Could not determine home directory or file path!")
-}
-
-fn update_shell_profile(shell: Shell, completion_path: &str) -> io::Result<()> {
-  let profile_path = get_profile_path(shell);
-  update_profile_file(&profile_path, shell, completion_path)
-}
-
-fn home_dir_file(filename: &str) -> Option<PathBuf> {
-  dirs::home_dir().map(|home| home.join(filename))
-}
-
-fn update_profile_file(
-  profile_path: &PathBuf,
-  shell: Shell,
-  completion_path: &str,
-) -> io::Result<()> {
-  let marker_start = "# --- BEGIN tempesta autocompletion ---";
-  let marker_end = "# --- END tempesta autocompletion ---";
-  let mut lines = Vec::new();
-  let mut in_existing_block = false;
-  if profile_path.exists() {
-    let file = fs::File::open(profile_path)?;
-    let reader = BufReader::new(file);
-
-    for line in reader.lines() {
-      let line = line?;
-      if line == marker_start {
-        in_existing_block = true;
-        lines.push(marker_start.to_string());
-        lines.push(generate_source_line(shell, completion_path));
-        continue;
-      } else if line == marker_end {
-        lines.push(marker_end.to_string());
-        in_existing_block = false;
-        continue;
-      }
-
-      if !in_existing_block {
-        lines.push(line);
-      }
-    }
-  }
-  // If no existing block was found, append it at the end.
-  if !lines.iter().any(|line| line == marker_start) {
-    lines.push("".to_string());
-    lines.push(marker_start.to_string());
-    lines.push(generate_source_line(shell, completion_path));
-    lines.push(marker_end.to_string());
-  }
-  let mut file = OpenOptions::new()
-    .write(true)
-    .create(true)
-    .truncate(true)
-    .open(profile_path)?;
-  for line in lines {
-    writeln!(file, "{}", line)?;
-  }
-  println!("Updated profile file: {}", profile_path.display());
-  Ok(())
-}
-
-fn generate_source_line(shell: Shell, completion_path: &str) -> String {
-  match shell {
-    Shell::Bash | Shell::Zsh => format!("source \"{}\"", completion_path),
-    Shell::Fish => format!("source \"{}\"", completion_path), // fish uses `source` too for compatibility
-  }
 }
 
 /// Recursively removes parent directories if they are empty.
