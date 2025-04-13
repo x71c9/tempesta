@@ -374,7 +374,7 @@ fn list(args: Vec<String>) {
         divisor = value.to_string();
       }
     } else if arg.starts_with("--divisor=") {
-      if let Some(value) = arg.splitn(2, '=').nth(1) {
+      if let Some(value) = arg.split_once('=').map(|x| x.1) {
         divisor = value.to_string();
       }
     }
