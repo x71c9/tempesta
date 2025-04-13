@@ -1,6 +1,6 @@
 # Tempesta
 
-The fastest and lightest bookmark manager CLI writte in Rust.\
+The fastest and lightest bookmark manager CLI written in Rust.\
 [Heavily inspired by [`pass`](https://www.passwordstore.org/)]
 
 Bookmark management should be simple and follow [Unix philosophy](https://en.wikipedia.org/wiki/Unix_philosophy).
@@ -48,6 +48,7 @@ It can also track all the changes using `git`.
 </details>
 
 - [fzf](#fzf)
+- [wofi](#wofi)
 
 ## How to use it
 
@@ -291,4 +292,12 @@ An alias like this might be useful to open bookmarks:
 
 ```bash
 alias tempo="tempesta list | fzf | sed 's/ *::.*//' | xargs tempesta open"
+```
+
+## wofi
+
+If you are using `wofi` you can pipe the result of `tempesta list` to it:
+
+```bash
+tempesta list | wofi --dmenu --insensitive --width 60% | xargs tempesta open
 ```
