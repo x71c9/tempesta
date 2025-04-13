@@ -379,13 +379,13 @@ fn list(args: Vec<String>) {
       }
     }
   }
-  let formatted = bookmarks.iter().filter_map(|path| {
+  let formatted = bookmarks.iter().map(|path| {
     let mut current_path = get_bookmark_store_dir_path();
     current_path.push(PathBuf::from(path));
     let full_path = format!("{}.toml", &current_path.display());
     let url =
       extract_url_from_toml(&full_path).unwrap_or_else(|_| "N/A".to_string());
-    Some(format!("{}{}{}", path, divisor, url))
+    format!("{}{}{}", path, divisor, url)
   });
   for line in formatted {
     println!("{}", line);
