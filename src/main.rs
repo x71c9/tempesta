@@ -38,7 +38,7 @@ impl Shell {
       Shell::Fish => "fish",
     }
   }
-  pub fn from_str(s: &str) -> Option<Self> {
+  pub fn from_shell_str(s: &str) -> Option<Self> {
     match s {
       "bash" => Some(Shell::Bash),
       "zsh" => Some(Shell::Zsh),
@@ -120,11 +120,11 @@ fn config() {
 fn completion(args: Vec<String>) {
   let detected_shell = detect_shell()
     .as_deref()
-    .and_then(Shell::from_str)
+    .and_then(Shell::from_shell_str)
     .unwrap_or(Shell::Bash);
   let mut selected_shell = detected_shell;
   if args.len() > 2 {
-    if let Some(shell) = Shell::from_str(&args[2]) {
+    if let Some(shell) = Shell::from_shell_str(&args[2]) {
       selected_shell = shell;
     }
   }
