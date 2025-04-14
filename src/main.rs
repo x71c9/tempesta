@@ -38,7 +38,7 @@ impl Shell {
       Shell::Fish => "fish",
     }
   }
-  pub fn from_str(s: &str) -> Option<Self> {
+  pub fn from_shell_str(s: &str) -> Option<Self> {
     match s {
       "bash" => Some(Shell::Bash),
       "zsh" => Some(Shell::Zsh),
@@ -120,11 +120,11 @@ fn config() {
 fn completion(args: Vec<String>) {
   let detected_shell = detect_shell()
     .as_deref()
-    .and_then(Shell::from_str)
+    .and_then(Shell::from_shell_str)
     .unwrap_or(Shell::Bash);
   let mut selected_shell = detected_shell;
   if args.len() > 2 {
-    if let Some(shell) = Shell::from_str(&args[2]) {
+    if let Some(shell) = Shell::from_shell_str(&args[2]) {
       selected_shell = shell;
     }
   }
@@ -374,18 +374,18 @@ fn list(args: Vec<String>) {
         divisor = value.to_string();
       }
     } else if arg.starts_with("--divisor=") {
-      if let Some(value) = arg.splitn(2, '=').nth(1) {
+      if let Some(value) = arg.split_once('=').map(|x| x.1) {
         divisor = value.to_string();
       }
     }
   }
-  let formatted = bookmarks.iter().filter_map(|path| {
+  let formatted = bookmarks.iter().map(|path| {
     let mut current_path = get_bookmark_store_dir_path();
     current_path.push(PathBuf::from(path));
     let full_path = format!("{}.toml", &current_path.display());
     let url =
       extract_url_from_toml(&full_path).unwrap_or_else(|_| "N/A".to_string());
-    Some(format!("{}{}{}", path, divisor, url))
+    format!("{}{}{}", path, divisor, url)
   });
   for line in formatted {
     println!("{}", line);
