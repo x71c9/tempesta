@@ -35,6 +35,7 @@ It can also track all the changes using `git`.
 - [Arch Linux (AUR)](#arch-linux-aur)
 - [Download binaries](#download-binaries)
 - [Build from source](#build-from-source)
+- [Shell completion](#shell-completion)
 
 </details>
 
@@ -85,12 +86,14 @@ tempesta list search-engines/
 ```
 
 Without arguments it lists all the bookmarks
+
 ```bash
 tempesta list
 ```
 
 List as an parameter that can be passed with the flag `--divisor` that divides
 the path name to the actual url:
+
 ```bash
 tempesta list search-engines/ --divisor=" --- "
 
@@ -98,6 +101,7 @@ tempesta list search-engines/ --divisor " --- "
 ```
 
 This prints:
+
 ```bash
 search-engines/google --- https://google.com/
 search-engines/duck --- https://duckduckgo.com/
@@ -208,6 +212,33 @@ you can use in the repo directory:
 cargo install --path .
 ```
 
+### Shell completion
+
+#### BASH
+
+```bash
+source <(tempesta completion bash)
+# set up autocomplete in bash into the current shell,
+# bash-completion package should be installed first.
+echo "source <(tempesta completion bash)" >> ~/.bashrc
+# add autocomplete permanently to your bash shell.
+```
+
+#### ZSH
+
+```bash
+source <(tempesta completion zsh)
+# set up autocomplete in zsh into the current shell
+echo '[[ $commands[tempesta] ]] && source <(tempesta completion zsh)' >> ~/.zshrc
+# add autocomplete permanently to your zsh shell
+```
+
+#### FISH
+
+```bash
+echo 'tempesta completion fish | source' > ~/.config/fish/completions/tempesta.fish && source ~/.config/fish/completions/tempesta.fish
+```
+
 ### Alias
 
 #### ZSH Alias
@@ -257,6 +288,7 @@ tempesta list | fzf | sed 's/ *::.*//' | xargs tempesta open
 ```
 
 An alias like this might be useful to open bookmarks:
+
 ```bash
 alias tempo="tempesta list | fzf | sed 's/ *::.*//' | xargs tempesta open"
 ```

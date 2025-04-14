@@ -24,13 +24,13 @@ _tempesta () {
   else
     local -a subcommands
     subcommands=(
-      "\[a\]dd:Add a new bookmark"
-      "\[e\]dit:Edit an existing bookmark"
-      "\[l\]ist:List bookmarks"
-      "\[m\]ove:Move an existing bookmark"
-      "\[o\]pen:Open a bookmark"
-      "\[r\]emove:Remove a bookmark"
-      "\[u\]pdate:Update an existing bookmark"
+      "add:[a] Add a new bookmark"
+      "edit:[e] Edit an existing bookmark"
+      "list:[l] List bookmarks"
+      "move:[m] Move an existing bookmark"
+      "open:[o] Open a bookmark"
+      "remove:[r] Remove a bookmark"
+      "update:[u] Update an existing bookmark"
       "" # without this is printing \[
     )
     _describe -t commands 'tempesta' subcommands
