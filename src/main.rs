@@ -139,24 +139,6 @@ fn print_version() {
 fn init() {
   let storage_path = prompt_valid_bookmark_store_path();
 
-  print!("Do you want to enable shell auto completion [recommended]? (Y/n): ");
-  io::stdout()
-    .flush()
-    .panic_on_error("Failed to flush stdout");
-
-  let mut autocomplete_input = String::new();
-  io::stdin()
-    .read_line(&mut autocomplete_input)
-    .panic_on_error("Failed to read input");
-
-  let enable_autocomplete = !matches!(
-    autocomplete_input.trim().to_lowercase().as_str(),
-    "n" | "no"
-  );
-  if enable_autocomplete {
-    completion(vec![])
-  }
-
   print!("Do you want to use Git for tracking bookmarks? (Y/n): ");
   io::stdout()
     .flush()
