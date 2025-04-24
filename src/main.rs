@@ -1,3 +1,6 @@
+#[cfg(test)]
+mod tests;
+
 use regex::Regex;
 use serde::{Deserialize, Serialize};
 use std::env;
@@ -533,14 +536,18 @@ fn edit(args: Vec<String>) {
 }
 
 fn get_config_file_path() -> PathBuf {
-  let home_dir =
-    dirs::home_dir().panic_on_error("Could not find home directory");
-  let mut config_path = home_dir;
-  config_path.push(".config/tempesta");
-  fs::create_dir_all(&config_path)
-    .panic_on_error("Failed to create config directory");
-  config_path.push("tempesta.toml");
-  config_path
+  if env::var("TEMPESTA_CONFIG").is_ok() {
+    PathBuf::from(env::var("TEMPESTA_CONFIG").unwrap())
+  } else {
+    let home_dir =
+      dirs::home_dir().panic_on_error("Could not find home directory");
+    let mut config_path = home_dir;
+    config_path.push(".config/tempesta");
+    fs::create_dir_all(&config_path)
+      .panic_on_error("Failed to create config directory");
+    config_path.push("tempesta.toml");
+    config_path
+  }
 }
 
 fn load_config() -> Config {
