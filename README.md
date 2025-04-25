@@ -84,7 +84,7 @@ Without arguments it lists all the bookmarks
 tempesta list
 ```
 
-List as an parameter that can be passed with the flag `--divisor` that divides
+List has a parameter that can be passed with the flag `--divisor` that divides
 the path name to the actual url:
 
 ```bash
