@@ -89,8 +89,6 @@ the path name to the actual url:
 
 ```bash
 tempesta list search-engines/ --divisor=" --- "
-
-tempesta list search-engines/ --divisor " --- "
 ```
 
 This prints:
