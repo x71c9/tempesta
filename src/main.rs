@@ -271,16 +271,27 @@ fn r#move(args: Vec<String>) {
     eprintln!("Usage: tempesta move <path-from> <path-to>");
     std::process::exit(1);
   }
+
   let relative_path_from = &args[2];
   validate_path(relative_path_from);
   let relative_path_to = &args[3];
   validate_path(relative_path_to);
+
   let toml_from_file_path = get_bookmark_file_path(relative_path_from);
   if !toml_from_file_path.exists() {
     eprintln!("Path {:?} do not exists", &toml_from_file_path.to_str());
     std::process::exit(1);
   }
-  let toml_to_file_path = get_bookmark_file_path(relative_path_to);
+
+  let toml_to_file_path = if relative_path_to.ends_with('/') {
+    let directory_path = Path::new(relative_path_to);
+    let file_name = toml_from_file_path.file_stem().unwrap();
+    let full_path = &directory_path.join(file_name).display().to_string();
+    get_bookmark_file_path(full_path)
+  } else {
+    get_bookmark_file_path(relative_path_to)
+  };
+
   if toml_to_file_path.exists() && !prompt_for_overwrite(&toml_to_file_path) {
     println!("Move operation aborted.");
     std::process::exit(0);
