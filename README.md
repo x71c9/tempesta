@@ -12,8 +12,7 @@ It can also track all the changes using `git`.
 
 ## Table of content
 
-<details>
-  <summary>How to use it</summary>
+How to use it:
 
 - [Init](#init)
 - [Add a bookmark](#add-a-bookmark)
@@ -23,13 +22,9 @@ It can also track all the changes using `git`.
 - [Open the URL in the browser](#open-the-url-in-the-browser)
 - [Remove a bookmark](#remove-a-bookmark)
 - [Update a bookmark](#update-a-bookmark)
-
-</details>
-
 - [Shortcut](#shortcut)
 
-<details>
-  <summary>Install</summary>
+Install
 
 - [MacOS (Homebrew)](#macos-homebrew)
 - [Arch Linux (AUR)](#arch-linux-aur)
@@ -37,15 +32,12 @@ It can also track all the changes using `git`.
 - [Build from source](#build-from-source)
 - [Shell completion](#shell-completion)
 
-</details>
-
-<details>
-  <summary>Alias</summary>
+Alias
 
 - [ZSH Alias](#zsh-alias)
 - [Bash Alias](#bash-alias)
 
-</details>
+Combine
 
 - [fzf](#fzf)
 - [wofi](#wofi)
