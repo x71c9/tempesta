@@ -109,6 +109,9 @@ fn main() {
   std::process::exit(0);
 }
 
+// ****************************************************************************
+// Print configuration values
+// ****************************************************************************
 fn config() {
   let config = load_config();
   println!("Git enabled: {}", config.git);
@@ -120,6 +123,10 @@ fn config() {
   println!("Bookmark store directory: {}", config.dir);
 }
 
+// ****************************************************************************
+// Print completion script according to the shell provided as arg or the one 
+// that was set in the $SHELL environmental variable
+// ****************************************************************************
 fn completion(args: Vec<String>) {
   let detected_shell = detect_shell()
     .as_deref()
@@ -135,13 +142,22 @@ fn completion(args: Vec<String>) {
   println!("{}", script)
 }
 
+// ****************************************************************************
+// Print the version of the package
+// ****************************************************************************
 fn print_version() {
   println!("Tempesta version: {}", env!("CARGO_PKG_VERSION"));
 }
 
+// ****************************************************************************
+// Initialize the package. The command that must be run the first time.
+// It sets the configuration:
+// - store path
+// - git
+// - git remote url
+// ****************************************************************************
 fn init() {
   let storage_path = prompt_valid_bookmark_store_path();
-
   print!("Do you want to use Git for tracking bookmarks? (Y/n): ");
   io::stdout()
     .flush()
@@ -227,6 +243,9 @@ fn check_write_permission(path: &Path) -> bool {
   }
 }
 
+// ****************************************************************************
+// Add a bookmark
+// ****************************************************************************
 fn add(args: Vec<String>) {
   if args.len() < 4 {
     eprintln!("Usage: tempesta add <path> <url> [tags...]");
@@ -269,6 +288,9 @@ fn add(args: Vec<String>) {
   println!("Bookmark added successfully as {}", &relative_path);
 }
 
+// ****************************************************************************
+// Move a bookmark
+// ****************************************************************************
 fn r#move(args: Vec<String>) {
   if args.len() < 4 {
     eprintln!("Usage: tempesta move <path-from> <path-to>");
@@ -328,6 +350,9 @@ fn r#move(args: Vec<String>) {
   );
 }
 
+// ****************************************************************************
+// Update a bookmark
+// ****************************************************************************
 fn update(args: Vec<String>) {
   if args.len() < 4 {
     eprintln!("Usage: tempesta update <path> <url> [tags...]");
@@ -350,6 +375,9 @@ fn update(args: Vec<String>) {
   println!("Bookmark updated successfully as {}", &relative_path);
 }
 
+// ****************************************************************************
+// List bookmarks under a certain directory
+// ****************************************************************************
 fn list(args: Vec<String>) {
   let bookmarks = if args.len() > 2 {
     get_toml_bookmark_files(Some(args[2].clone()))
@@ -388,6 +416,9 @@ fn list(args: Vec<String>) {
   }
 }
 
+// ****************************************************************************
+// Open a bookmark in the browser
+// ****************************************************************************
 fn open(args: Vec<String>) {
   let relative_path = if args.len() < 3 {
     // No path provided, try to invoke finder
@@ -452,6 +483,9 @@ fn get_toml_bookmark_files(sub_path: Option<String>) -> Vec<String> {
   bookmarks
 }
 
+// ****************************************************************************
+// Remove a bookmark
+// ****************************************************************************
 fn remove(args: Vec<String>) {
   if args.len() < 3 {
     eprintln!("Usage: tempesta remove <path>");
@@ -506,6 +540,9 @@ fn remove(args: Vec<String>) {
   println!("Operation canceled.");
 }
 
+// ****************************************************************************
+// Edit a bookmark
+// ****************************************************************************
 fn edit(args: Vec<String>) {
   if args.len() < 3 {
     eprintln!("Usage: tempesta edit <path>");
