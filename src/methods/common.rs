@@ -3,8 +3,11 @@ use serde::{Deserialize, Serialize};
 use std::fs;
 use std::path::PathBuf;
 use std::process::Command;
+use std::sync::OnceLock;
 
 use super::config;
+
+pub static CONFIG_FILE_PATH: OnceLock<PathBuf> = OnceLock::new();
 
 #[derive(Serialize, Deserialize)]
 pub struct Bookmark {

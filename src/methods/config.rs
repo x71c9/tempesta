@@ -4,7 +4,6 @@
 
 use super::common::PanicOnError;
 use serde::{Deserialize, Serialize};
-use std::env;
 use std::fs;
 use std::path::PathBuf;
 
@@ -36,18 +35,19 @@ pub fn load_config() -> Config {
 }
 
 pub fn get_config_file_path() -> PathBuf {
-  if env::var("TEMPESTA_CONFIG").is_ok() {
-    PathBuf::from(env::var("TEMPESTA_CONFIG").unwrap())
-  } else {
-    let home_dir =
-      dirs::home_dir().panic_on_error("Could not find home directory");
-    let mut config_path = home_dir;
-    config_path.push(".config/tempesta");
-    fs::create_dir_all(&config_path)
-      .panic_on_error("Failed to create config directory");
-    config_path.push("tempesta.toml");
-    config_path
-  }
+  super::common::CONFIG_FILE_PATH
+    .get()
+    .cloned()
+    .unwrap_or_else(|| {
+      let home_dir =
+        dirs::home_dir().panic_on_error("Could not find home directory");
+      let mut config_path = home_dir;
+      config_path.push(".config/tempesta");
+      fs::create_dir_all(&config_path)
+        .panic_on_error("Failed to create config directory");
+      config_path.push("tempesta.toml");
+      config_path
+    })
 }
 
 pub fn save_config(config: &Config) {

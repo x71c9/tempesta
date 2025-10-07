@@ -54,6 +54,21 @@ tempesta init
 
 This will prompt with questions about the set up.
 
+## Configuration
+
+Tempesta's configuration file (`tempesta.toml`) is typically located at `~/.config/tempesta/tempesta.toml`.
+
+You can specify a custom configuration file path using the `--config` or `-c` global flag. This flag can be placed anywhere in the command line:
+
+```bash
+tempesta --config /path/to/your/custom/tempesta.toml init
+tempesta -c /path/to/another/config.toml list
+```
+
+If the `--config` flag is not provided, Tempesta will check for the `TEMPESTA_CONFIG` environment variable. If set, its value will be used as the configuration file path.
+
+The `--config` flag takes precedence over the `TEMPESTA_CONFIG` environment variable. If neither is provided, Tempesta defaults to `~/.config/tempesta/tempesta.toml`.
+
 #### Add a bookmark
 
 ```bash
