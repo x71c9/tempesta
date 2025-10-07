@@ -1,5 +1,8 @@
 mod methods;
 
+#[cfg(test)]
+mod tests;
+
 use methods::common::CONFIG_FILE_PATH;
 use std::env;
 use std::path::PathBuf;
