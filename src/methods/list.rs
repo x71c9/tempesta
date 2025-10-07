@@ -2,9 +2,9 @@
 // List bookmarks under a certain directory
 // ****************************************************************************
 
-use std::fs;
-use std::path::{PathBuf};
 use super::common;
+use std::fs;
+use std::path::PathBuf;
 
 pub fn run(args: Vec<String>) {
   let bookmarks = if args.len() > 2 {
@@ -55,4 +55,3 @@ fn extract_url_from_toml(
     .map(String::from)
     .ok_or_else(|| "Missing or invalid `url`".into())
 }
-

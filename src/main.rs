@@ -1,6 +1,6 @@
+mod methods;
 #[cfg(test)]
 mod tests;
-mod methods;
 
 use std::env;
 
@@ -40,4 +40,3 @@ fn main() {
 fn print_version() {
   println!("Tempesta version: {}", env!("CARGO_PKG_VERSION"));
 }
-

@@ -8,7 +8,7 @@
 
 use std::fs::{self, File};
 use std::io::{self, Write};
-use std::path::{Path};
+use std::path::Path;
 
 use super::common::{self, PanicOnError};
 use super::config::{self, Config};

@@ -2,11 +2,11 @@
 // Print configuration values
 // ****************************************************************************
 
-use super::common::{PanicOnError};
+use super::common::PanicOnError;
 use serde::{Deserialize, Serialize};
 use std::env;
 use std::fs;
-use std::path::{PathBuf};
+use std::path::PathBuf;
 
 #[derive(Serialize, Deserialize)]
 pub struct Config {

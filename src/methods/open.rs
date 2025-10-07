@@ -27,5 +27,3 @@ fn get_url(relative_path: &String) -> String {
     .panic_on_error("Failed to parse TOML content");
   bookmark.url
 }
-
-

@@ -45,4 +45,3 @@ pub fn run(args: Vec<String>) {
   common::git_commit(&comment);
   println!("Bookmark added successfully as {}", &relative_path);
 }
-

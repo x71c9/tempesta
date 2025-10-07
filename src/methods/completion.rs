@@ -1,5 +1,5 @@
 // ****************************************************************************
-// Print completion script according to the shell provided as arg or the one 
+// Print completion script according to the shell provided as arg or the one
 // that was set in the $SHELL environmental variable
 // ****************************************************************************
 
@@ -57,4 +57,3 @@ fn detect_shell() -> Option<String> {
     shell_path.split('/').next_back().map(|s| s.to_string())
   })
 }
-

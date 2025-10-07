@@ -25,4 +25,3 @@ pub fn run(args: Vec<String>) {
 
   println!("Bookmark updated successfully as {}", &relative_path);
 }
-

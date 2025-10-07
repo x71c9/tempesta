@@ -1,7 +1,7 @@
 use regex::Regex;
 use serde::{Deserialize, Serialize};
 use std::fs;
-use std::path::{PathBuf};
+use std::path::PathBuf;
 use std::process::Command;
 
 use super::config;
@@ -172,4 +172,3 @@ pub fn run_command(
     .output()
     .panic_on_error(error_message);
 }
-

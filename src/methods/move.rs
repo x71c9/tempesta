@@ -2,10 +2,10 @@
 // Move a bookmark
 // ****************************************************************************
 
+use super::common::{self, PanicOnError};
 use std::fs;
 use std::io::{self, Write};
-use std::path::{Path};
-use super::common::{self, PanicOnError};
+use std::path::Path;
 
 pub fn run(args: Vec<String>) {
   if args.len() < 4 {
@@ -114,4 +114,3 @@ fn cleanup_empty_parents(starting_dir: &Path) -> std::io::Result<()> {
   }
   Ok(())
 }
-
