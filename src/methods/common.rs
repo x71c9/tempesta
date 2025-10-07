@@ -172,3 +172,12 @@ pub fn run_command(
     .output()
     .panic_on_error(error_message);
 }
+
+pub fn get_url(relative_path: &String) -> String {
+  let toml_file_path = get_bookmark_file_path(relative_path);
+  let toml_content =
+    fs::read_to_string(toml_file_path).panic_on_error("Failed to read TOML");
+  let bookmark: Bookmark = toml::from_str(&toml_content)
+    .panic_on_error("Failed to parse TOML content");
+  bookmark.url
+}

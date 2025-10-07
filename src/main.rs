@@ -16,6 +16,7 @@ fn main() {
     "completion" => methods::completion::run(args),
     "config" | "c" => methods::config::run(),
     "edit" | "e" => methods::edit::run(args),
+    "get" | "g" => methods::get::run(args),
     "init" | "i" => methods::init::run(),
     "list" | "l" => methods::list::run(args),
     "move" | "m" => methods::r#move::run(args),
@@ -26,7 +27,7 @@ fn main() {
     _ => {
       eprintln!("Unknown command: {}", command);
       eprintln!(
-        "Available commands: [a]dd, [e]dit, [l]ist, [m]ove, [o]pen, [r]emove, [u]pdate"
+        "Available commands: [a]dd, [e]dit, [i]nit, [l]ist, [m]ove, [o]pen, [r]emove, [u]pdate"
       );
       std::process::exit(1);
     }

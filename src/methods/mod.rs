@@ -3,6 +3,7 @@ pub mod common;
 pub mod completion;
 pub mod config;
 pub mod edit;
+pub mod get;
 pub mod init;
 pub mod list;
 pub mod r#move;
