@@ -56,10 +56,10 @@ fn main() {
     "edit" | "e" => methods::edit::run(processed_args),
     "get" | "g" => methods::get::run(processed_args),
     "init" | "i" => methods::init::run(),
-    "list" | "l" => methods::list::run(processed_args),
-    "move" | "m" => methods::r#move::run(processed_args),
+    "list" | "l" | "ls" => methods::list::run(processed_args),
+    "move" | "m" | "mv" => methods::r#move::run(processed_args),
     "open" | "o" => methods::open::run(processed_args),
-    "remove" | "r" => methods::remove::run(processed_args),
+    "remove" | "r" | "rm" => methods::remove::run(processed_args),
     "update" | "u" => methods::update::run(processed_args),
     "--version" | "-v" => print_version(),
     _ => {
