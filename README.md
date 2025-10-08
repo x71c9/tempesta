@@ -17,6 +17,8 @@ How to use it:
 - [Init](#init)
 - [Add a bookmark](#add-a-bookmark)
 - [Edit a bookmark](#edit-a-bookmark)
+- [Get a bookmark](#get-a-bookmark)
+- [Show configuration](#show-configuration)
 - [List bookmarks](#list-bookmarks)
 - [Move a bookmark](#move-a-bookmark)
 - [Open the URL in the browser](#open-the-url-in-the-browser)
@@ -85,6 +87,24 @@ tempesta edit <local-path>
 tempesta edit search-engines/google
 ```
 
+#### Get a bookmark
+
+It prints the URL of the bookmark
+
+```bash
+tempesta get <local-path>
+
+tempesta get search-engines/google
+```
+
+#### Show configuration
+
+It prints the current configuration
+
+```bash
+tempesta config
+```
+
 #### List bookmarks
 
 ```bash
@@ -151,7 +171,10 @@ You can use the initial of the methods instead of their full identifier:
 
 ```bash
 [a]dd     -- Add a new bookmark
+[c]onfig  -- Show the current configuration
 [e]dit    -- Edit an existing bookmark
+[g]et     -- Get an existing bookmark
+[i]nit    -- Init the bookmark store
 [l]ist    -- List bookmarks
 [m]ove    -- Move a bookmark
 [o]pen    -- Open a bookmark
