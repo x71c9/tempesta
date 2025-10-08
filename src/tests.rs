@@ -25,6 +25,8 @@ fn test_setup(name: &str) -> (String, String) {
   let home_str = get_home();
   let test_config_file_path = get_test_config_file_path(&home_str, name);
   let test_bookmark_dir_path = get_test_bookmark_dir_path(&home_str, name);
+  println!("config: {}", test_config_file_path);
+  println!("store: {}", test_bookmark_dir_path);
   Command::cargo_bin("tempesta")
     .unwrap()
     .arg("init")
@@ -125,8 +127,7 @@ fn tempesta_add() {
       "Bookmark file stored at {}test.toml\n",
       "Bookmark added successfully as test\n"
     ),
-    &test_bookmark_dir_path,
-    &test_bookmark_dir_path
+    &test_bookmark_dir_path, &test_bookmark_dir_path
   );
   Command::cargo_bin("tempesta")
     .unwrap()
@@ -247,5 +248,48 @@ fn tempesta_remove() {
 
 #[test]
 fn tempesta_update() {
-  // TODO
+  let name = "update";
+  let (test_config_file_path, test_bookmark_dir_path) = test_setup(name);
+  let bookmark_path = "test/test-update";
+  Command::cargo_bin("tempesta")
+    .unwrap()
+    .args([
+      "add",
+      bookmark_path,
+      "https://test-update.local",
+      "test-update",
+      "--config",
+      &test_config_file_path,
+    ])
+    .assert()
+    .success();
+  let output_update_bookmark = format!(
+    concat!(
+      "Bookmark file stored at {}{}.toml\n",
+      "Bookmark updated successfully as {}\n"
+    ),
+    &test_bookmark_dir_path, bookmark_path, bookmark_path
+  );
+  let new_url = "http://test-update.new";
+  Command::cargo_bin("tempesta")
+    .unwrap()
+    .args([
+      "update",
+      bookmark_path,
+      new_url,
+      "new",
+      "--config",
+      &test_config_file_path,
+    ])
+    .assert()
+    .success()
+    .stdout(output_update_bookmark);
+  let get_output = format!("{}\n", new_url);
+  Command::cargo_bin("tempesta")
+    .unwrap()
+    .args(["get", bookmark_path, "--config", &test_config_file_path])
+    .assert()
+    .success()
+    .stdout(get_output);
+  test_cleanup(name);
 }
