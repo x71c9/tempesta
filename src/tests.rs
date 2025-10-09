@@ -158,7 +158,55 @@ fn tempesta_config() {
 
 #[test]
 fn tempesta_list() {
-  // TODO
+  let name = "list";
+  let (test_config_file_path, _test_bookmark_dir_path) = test_setup(name);
+  let bookmark_path_a = "test/test-list-a";
+  let bookmark_path_b = "test/test-list-b";
+  let bookmark_url_a = "https://test-list.local.a";
+  let bookmark_url_b = "https://test-list.local.b";
+  Command::cargo_bin("tempesta")
+    .unwrap()
+    .args([
+      "add",
+      bookmark_path_b,
+      bookmark_url_b,
+      "test-list-tag",
+      "--config",
+      &test_config_file_path,
+    ])
+    .assert()
+    .success();
+  Command::cargo_bin("tempesta")
+    .unwrap()
+    .args([
+      "add",
+      bookmark_path_a,
+      bookmark_url_a,
+      "test-update-tag",
+      "--config",
+      &test_config_file_path,
+    ])
+    .assert()
+    .success();
+  let output_list_bookmark = format!(
+    concat!(
+      "{} :: {}\n",
+      "{} :: {}\n"
+    ),
+    bookmark_path_a, bookmark_url_a,
+    bookmark_path_b, bookmark_url_b
+  );
+  Command::cargo_bin("tempesta")
+    .unwrap()
+    .args([
+      "list",
+      "--config",
+      &test_config_file_path,
+    ])
+    .assert()
+    .success()
+    .stdout(output_list_bookmark);
+  test_cleanup(name);
 }
 
 #[test]
@@ -257,7 +305,7 @@ fn tempesta_update() {
       "add",
       bookmark_path,
       "https://test-update.local",
-      "test-update",
+      "test-update-tag",
       "--config",
       &test_config_file_path,
     ])
@@ -277,7 +325,7 @@ fn tempesta_update() {
       "update",
       bookmark_path,
       new_url,
-      "new",
+      "new-tag",
       "--config",
       &test_config_file_path,
     ])

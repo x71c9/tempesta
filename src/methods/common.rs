@@ -67,6 +67,7 @@ pub fn get_toml_bookmark_files(sub_path: Option<String>) -> Vec<String> {
   if bookmarks.is_empty() {
     eprintln!("No .toml files found in {:?}", search_dir);
   }
+  bookmarks.sort();
   bookmarks
 }
 
