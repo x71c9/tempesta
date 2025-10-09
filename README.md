@@ -329,3 +329,11 @@ If you are using `wofi` you can pipe the result of `tempesta list` to it:
 ```bash
 tempesta list | wofi --dmenu --insensitive --width 60% | xargs tempesta open
 ```
+
+## rofi
+
+If you are using `rofi` you can pipe the result of `tempesta list` to it:
+
+```bash
+tempesta list | rofi -dmenu -i -matching fuzzy -sorting-method fzf -p "tempesta" | xargs tempesta open
+```
