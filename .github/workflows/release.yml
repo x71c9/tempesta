@@ -1,5 +1,5 @@
 ---
-name: Release Binaries
+name: New version build, release and update repositories
 on:
   push:
     tags:
