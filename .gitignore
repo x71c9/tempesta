@@ -1,4 +1,4 @@
 /target
 *.swo
 *.swp
-.DS_Store
+.direnv
