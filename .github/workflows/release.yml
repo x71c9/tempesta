@@ -194,39 +194,84 @@ jobs:
           cd nur-packages
           version=${GITHUB_REF_NAME#v}
           
-          # Update version in default.nix
+          echo "Updating tempesta to version ${version}"
+          
+          # Step 1: Update version in default.nix
           sed -i "s/version = \"[^\"]*\"/version = \"${version}\"/" pkgs/tempesta/default.nix
+          echo "✓ Updated version to ${version}"
           
-          # Get the new source hash in SRI format
+          # Step 2: Get and update source hash
+          echo "Calculating source hash..."
           base32_hash=$(nix-prefetch-url --unpack "https://github.com/x71c9/tempesta/archive/refs/tags/v${version}.tar.gz")
-          new_hash=$(nix-hash --type sha256 --to-sri "$base32_hash")
-          
-          # Update the hash in default.nix
-          sed -i "s|hash = \"[^\"]*\"|hash = \"${new_hash}\"|" pkgs/tempesta/default.nix
-          
-          # Try to build and auto-fix cargoHash if needed
-          echo "Testing build to detect cargoHash..."
-          if ! nix-build -E "(import <nixpkgs> {}).callPackage ./pkgs/tempesta/default.nix {}" 2>/tmp/build_error; then
-            echo "Build failed, checking for hash mismatch..."
-            cat /tmp/build_error
-            if grep -q "got:" /tmp/build_error && grep -q "vendor" /tmp/build_error; then
-              echo "Detected cargoHash mismatch, extracting new hash..."
-              new_cargo_hash=$(grep "got:" /tmp/build_error | tail -1 | sed 's/.*got:[[:space:]]*\(sha256-[^[:space:]]*\).*/\1/')
-              echo "New cargoHash: ${new_cargo_hash}"
-              if [[ -n "$new_cargo_hash" && "$new_cargo_hash" =~ ^sha256- ]]; then
-                sed -i "s|cargoHash = \"[^\"]*\"|cargoHash = \"${new_cargo_hash}\"|" pkgs/tempesta/default.nix
-                echo "Updated cargoHash successfully"
-              else
-                echo "Failed to extract valid cargoHash"
-              fi
-            fi
-          else
-            echo "Build succeeded, no cargoHash update needed"
+          if [[ -z "$base32_hash" ]]; then
+            echo "❌ Failed to get source hash"
+            exit 1
           fi
           
-          # Commit and push changes
+          new_hash=$(nix-hash --type sha256 --to-sri "$base32_hash")
+          if [[ ! "$new_hash" =~ ^sha256- ]]; then
+            echo "❌ Invalid source hash format: $new_hash"
+            exit 1
+          fi
+          
+          sed -i "s|hash = \"[^\"]*\"|hash = \"${new_hash}\"|" pkgs/tempesta/default.nix
+          echo "✓ Updated source hash to ${new_hash}"
+          
+          # Step 3: Get cargoHash by building and extracting from error
+          echo "Determining correct cargoHash..."
+          
+          # Set a placeholder cargoHash that will fail
+          sed -i "s|cargoHash = \"[^\"]*\"|cargoHash = \"sha256-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=\"|" pkgs/tempesta/default.nix
+          
+          # Build and capture error (disable exit on error)
+          set +e
+          timeout 300s nix-build -E "(import <nixpkgs> {}).callPackage ./pkgs/tempesta/default.nix {}" 2>/tmp/build_error >/dev/null
+          build_result=$?
+          set -e
+          
+          if [[ $build_result -ne 0 ]]; then
+            echo "Build failed as expected, extracting cargoHash..."
+            
+            # Check if we got a hash mismatch error
+            if grep -q "got:" /tmp/build_error && grep -q "vendor" /tmp/build_error; then
+              # Extract the correct cargoHash
+              correct_cargo_hash=$(grep "got:" /tmp/build_error | grep "sha256-" | tail -1 | sed 's/.*got:[[:space:]]*\(sha256-[A-Za-z0-9+/=]*\).*/\1/')
+              
+              if [[ -n "$correct_cargo_hash" && "$correct_cargo_hash" =~ ^sha256- ]]; then
+                # Update with correct cargoHash
+                sed -i "s|cargoHash = \"[^\"]*\"|cargoHash = \"${correct_cargo_hash}\"|" pkgs/tempesta/default.nix
+                echo "✓ Updated cargoHash to ${correct_cargo_hash}"
+              else
+                echo "❌ Failed to extract valid cargoHash from error"
+                echo "Error output:"
+                cat /tmp/build_error
+                exit 1
+              fi
+            else
+              echo "❌ No cargoHash mismatch found in build error"
+              echo "Error output:"
+              cat /tmp/build_error
+              exit 1
+            fi
+          else
+            echo "❌ Build succeeded unexpectedly - cargoHash may already be correct"
+            exit 1
+          fi
+          
+          # Step 4: Verify the fix by testing build
+          echo "Verifying the fix..."
+          if timeout 300s nix-build -E "(import <nixpkgs> {}).callPackage ./pkgs/tempesta/default.nix {}" >/dev/null 2>&1; then
+            echo "✓ Build verification successful"
+          else
+            echo "❌ Build verification failed - hashes may still be incorrect"
+            exit 1
+          fi
+          
+          # Step 5: Commit and push changes
+          echo "Committing changes..."
           git config user.email "108585118+x71c9@users.noreply.github.com"
           git config user.name "x71c9"
           git add pkgs/tempesta/default.nix
           git commit -m "tempesta: ${version}"
           git push origin main
+          echo "✓ Changes committed and pushed successfully"
