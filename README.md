@@ -208,6 +208,18 @@ yay -S tempesta
 
 ---
 
+### NixOS/Nix (NUR)
+
+```bash
+# Direct install (requires NUR)
+nix-env -iA nur.repos.x71c9.tempesta -f '<nixpkgs>'
+
+# Home Manager (requires NUR input/overlay)
+home.packages = [ pkgs.nur.repos.x71c9.tempesta ];
+```
+
+---
+
 ### Download binaries
 
 Download the latest compatible binaries for your system and architecture:
