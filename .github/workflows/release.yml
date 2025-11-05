@@ -174,3 +174,37 @@ jobs:
           git commit -m "chore(release): release ${version}"
           GIT_SSH_COMMAND="ssh -i ~/.ssh/id_ed25519 -o IdentitiesOnly=yes -o StrictHostKeyChecking=no" git push origin master
           SCRIPT
+  update-nur:
+    name: Update NUR
+    needs: release
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout tempesta repository
+        uses: actions/checkout@v4
+      - name: Checkout NUR packages repository
+        uses: actions/checkout@v4
+        with:
+          repository: x71c9/nur-packages
+          token: ${{ secrets.NUR_PAT }}
+          path: nur-packages
+      - name: Update tempesta package
+        run: |
+          cd nur-packages
+          version=${GITHUB_REF_NAME#v}
+          
+          # Update version in default.nix
+          sed -i "s/version = \"[^\"]*\"/version = \"${version}\"/" pkgs/tempesta/default.nix
+          
+          # Get the new source hash
+          nix-shell -p nix-prefetch-url --run "nix-prefetch-url --unpack https://github.com/x71c9/tempesta/archive/refs/tags/v${version}.tar.gz" > /tmp/new_hash
+          new_hash=$(cat /tmp/new_hash)
+          
+          # Update the hash in default.nix
+          sed -i "s/hash = \"[^\"]*\"/hash = \"${new_hash}\"/" pkgs/tempesta/default.nix
+          
+          # Commit and push changes
+          git config user.email "108585118+x71c9@users.noreply.github.com"
+          git config user.name "x71c9"
+          git add pkgs/tempesta/default.nix
+          git commit -m "tempesta: ${version}"
+          git push origin main
