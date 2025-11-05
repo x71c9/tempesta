@@ -198,17 +198,30 @@ jobs:
           sed -i "s/version = \"[^\"]*\"/version = \"${version}\"/" pkgs/tempesta/default.nix
           
           # Get the new source hash in SRI format
-          new_hash=$(nix-prefetch-url --unpack "https://github.com/x71c9/tempesta/archive/refs/tags/v${version}.tar.gz")
+          base32_hash=$(nix-prefetch-url --unpack "https://github.com/x71c9/tempesta/archive/refs/tags/v${version}.tar.gz")
+          new_hash=$(nix-hash --type sha256 --to-sri "$base32_hash")
           
           # Update the hash in default.nix
           sed -i "s/hash = \"[^\"]*\"/hash = \"${new_hash}\"/" pkgs/tempesta/default.nix
           
           # Try to build and auto-fix cargoHash if needed
-          if ! nix-build -A tempesta 2>/tmp/build_error; then
-            if grep -q "cargoHash" /tmp/build_error; then
-              new_cargo_hash=$(grep "got:" /tmp/build_error | sed 's/.*got: *\(.*\)/\1/')
-              sed -i "s/cargoHash = \"[^\"]*\"/cargoHash = \"${new_cargo_hash}\"/" pkgs/tempesta/default.nix
+          echo "Testing build to detect cargoHash..."
+          if ! nix-build -E "(import <nixpkgs> {}).callPackage ./pkgs/tempesta/default.nix {}" 2>/tmp/build_error; then
+            echo "Build failed, checking for hash mismatch..."
+            cat /tmp/build_error
+            if grep -q "got:" /tmp/build_error && grep -q "vendor" /tmp/build_error; then
+              echo "Detected cargoHash mismatch, extracting new hash..."
+              new_cargo_hash=$(grep "got:" /tmp/build_error | tail -1 | sed 's/.*got:[[:space:]]*\(sha256-[^[:space:]]*\).*/\1/')
+              echo "New cargoHash: ${new_cargo_hash}"
+              if [[ -n "$new_cargo_hash" && "$new_cargo_hash" =~ ^sha256- ]]; then
+                sed -i "s/cargoHash = \"[^\"]*\"/cargoHash = \"${new_cargo_hash}\"/" pkgs/tempesta/default.nix
+                echo "Updated cargoHash successfully"
+              else
+                echo "Failed to extract valid cargoHash"
+              fi
             fi
+          else
+            echo "Build succeeded, no cargoHash update needed"
           fi
           
           # Commit and push changes
