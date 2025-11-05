@@ -196,8 +196,8 @@ jobs:
           sed -i "s/version = \"[^\"]*\"/version = \"${version}\"/" pkgs/tempesta/default.nix
           
           # Get the new source hash
-          nix-shell -p nix-prefetch-url --run "nix-prefetch-url --unpack https://github.com/x71c9/tempesta/archive/refs/tags/v${version}.tar.gz" > /tmp/new_hash
-          new_hash=$(cat /tmp/new_hash)
+          curl -L "https://github.com/x71c9/tempesta/archive/refs/tags/v${version}.tar.gz" -o /tmp/tempesta.tar.gz
+          new_hash="sha256-$(sha256sum /tmp/tempesta.tar.gz | cut -d' ' -f1 | xxd -r -p | base64)"
           
           # Update the hash in default.nix
           sed -i "s/hash = \"[^\"]*\"/hash = \"${new_hash}\"/" pkgs/tempesta/default.nix
