@@ -327,7 +327,7 @@ alias tempo="tempesta list | fzf | sed 's/ *::.*//' | xargs tempesta open"
 If you are using `wofi` you can pipe the result of `tempesta list` to it:
 
 ```bash
-tempesta list | wofi --dmenu --insensitive --width 60% | xargs tempesta open
+tempesta list | wofi --dmenu --insensitive | xargs tempesta open
 ```
 
 ## rofi
