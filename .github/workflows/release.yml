@@ -202,7 +202,7 @@ jobs:
           new_hash=$(nix-hash --type sha256 --to-sri "$base32_hash")
           
           # Update the hash in default.nix
-          sed -i "s/hash = \"[^\"]*\"/hash = \"${new_hash}\"/" pkgs/tempesta/default.nix
+          sed -i "s|hash = \"[^\"]*\"|hash = \"${new_hash}\"|" pkgs/tempesta/default.nix
           
           # Try to build and auto-fix cargoHash if needed
           echo "Testing build to detect cargoHash..."
@@ -214,7 +214,7 @@ jobs:
               new_cargo_hash=$(grep "got:" /tmp/build_error | tail -1 | sed 's/.*got:[[:space:]]*\(sha256-[^[:space:]]*\).*/\1/')
               echo "New cargoHash: ${new_cargo_hash}"
               if [[ -n "$new_cargo_hash" && "$new_cargo_hash" =~ ^sha256- ]]; then
-                sed -i "s/cargoHash = \"[^\"]*\"/cargoHash = \"${new_cargo_hash}\"/" pkgs/tempesta/default.nix
+                sed -i "s|cargoHash = \"[^\"]*\"|cargoHash = \"${new_cargo_hash}\"|" pkgs/tempesta/default.nix
                 echo "Updated cargoHash successfully"
               else
                 echo "Failed to extract valid cargoHash"
