@@ -179,6 +179,8 @@ jobs:
     needs: release
     runs-on: ubuntu-latest
     steps:
+      - name: Install Nix
+        uses: cachix/install-nix-action@v25
       - name: Checkout tempesta repository
         uses: actions/checkout@v4
       - name: Checkout NUR packages repository
@@ -196,8 +198,7 @@ jobs:
           sed -i "s/version = \"[^\"]*\"/version = \"${version}\"/" pkgs/tempesta/default.nix
           
           # Get the new source hash
-          curl -L "https://github.com/x71c9/tempesta/archive/refs/tags/v${version}.tar.gz" -o /tmp/tempesta.tar.gz
-          new_hash="sha256-$(sha256sum /tmp/tempesta.tar.gz | cut -d' ' -f1 | xxd -r -p | base64)"
+          new_hash=$(nix-prefetch-url --unpack "https://github.com/x71c9/tempesta/archive/refs/tags/v${version}.tar.gz")
           
           # Update the hash in default.nix
           sed -i "s/hash = \"[^\"]*\"/hash = \"${new_hash}\"/" pkgs/tempesta/default.nix
