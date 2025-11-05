@@ -197,11 +197,19 @@ jobs:
           # Update version in default.nix
           sed -i "s/version = \"[^\"]*\"/version = \"${version}\"/" pkgs/tempesta/default.nix
           
-          # Get the new source hash
+          # Get the new source hash in SRI format
           new_hash=$(nix-prefetch-url --unpack "https://github.com/x71c9/tempesta/archive/refs/tags/v${version}.tar.gz")
           
           # Update the hash in default.nix
           sed -i "s/hash = \"[^\"]*\"/hash = \"${new_hash}\"/" pkgs/tempesta/default.nix
+          
+          # Try to build and auto-fix cargoHash if needed
+          if ! nix-build -A tempesta 2>/tmp/build_error; then
+            if grep -q "cargoHash" /tmp/build_error; then
+              new_cargo_hash=$(grep "got:" /tmp/build_error | sed 's/.*got: *\(.*\)/\1/')
+              sed -i "s/cargoHash = \"[^\"]*\"/cargoHash = \"${new_cargo_hash}\"/" pkgs/tempesta/default.nix
+            fi
+          fi
           
           # Commit and push changes
           git config user.email "108585118+x71c9@users.noreply.github.com"
