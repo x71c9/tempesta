@@ -225,7 +225,7 @@ jobs:
           
           # Build and capture error (disable exit on error)
           set +e
-          timeout 300s nix-build -E "(import <nixpkgs> {}).callPackage ./pkgs/tempesta/default.nix {}" 2>/tmp/build_error >/dev/null
+          timeout 300s nix-build -E "with import (builtins.fetchTarball https://github.com/NixOS/nixpkgs/archive/nixos-unstable.tar.gz) {}; callPackage ./pkgs/tempesta/default.nix {}" 2>/tmp/build_error >/dev/null
           build_result=$?
           set -e
           
@@ -260,7 +260,7 @@ jobs:
           
           # Step 4: Verify the fix by testing build
           echo "Verifying the fix..."
-          if timeout 300s nix-build -E "(import <nixpkgs> {}).callPackage ./pkgs/tempesta/default.nix {}" >/dev/null 2>&1; then
+          if timeout 300s nix-build -E "with import (builtins.fetchTarball https://github.com/NixOS/nixpkgs/archive/nixos-unstable.tar.gz) {}; callPackage ./pkgs/tempesta/default.nix {}" >/dev/null 2>&1; then
             echo "✓ Build verification successful"
           else
             echo "❌ Build verification failed - hashes may still be incorrect"
