@@ -61,6 +61,7 @@ fn main() {
     "open" | "o" => methods::open::run(processed_args),
     "remove" | "r" | "rm" => methods::remove::run(processed_args),
     "update" | "u" => methods::update::run(processed_args),
+    "--help" | "-h" => print_help(),
     "--version" | "-v" => print_version(),
     _ => {
       eprintln!("Unknown command: {}", command);
@@ -78,4 +79,32 @@ fn main() {
 // ****************************************************************************
 fn print_version() {
   println!("Tempesta version: {}", env!("CARGO_PKG_VERSION"));
+}
+
+// ****************************************************************************
+// Print help
+// ****************************************************************************
+fn print_help() {
+  println!("Tempesta - The lightest and fastest CLI for managing bookmarks");
+  println!();
+  println!("USAGE:");
+  println!("    tempesta <COMMAND> [OPTIONS]");
+  println!();
+  println!("COMMANDS:");
+  println!("    add, a          Add a new bookmark");
+  println!("    completion      Generate shell completion");
+  println!("    config, c       Show configuration");
+  println!("    edit, e         Edit a bookmark");
+  println!("    get, g          Get bookmark URL");
+  println!("    init, i         Initialize configuration");
+  println!("    list, l, ls     List all bookmarks");
+  println!("    move, m, mv     Move/rename a bookmark");
+  println!("    open, o         Open a bookmark in browser");
+  println!("    remove, r, rm   Remove a bookmark");
+  println!("    update, u       Update a bookmark");
+  println!();
+  println!("OPTIONS:");
+  println!("    --config, -c <PATH>    Use custom config file path");
+  println!("    --help, -h             Show this help message");
+  println!("    --version, -v          Show version information");
 }
