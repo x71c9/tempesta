@@ -211,12 +211,17 @@ yay -S tempesta
 ### NixOS/Nix (NUR)
 
 ```bash
-# Direct install (requires NUR)
+# Direct install
 nix-env -iA nur.repos.x71c9.tempesta -f '<nixpkgs>'
 
-# Home Manager (requires NUR input/overlay)
+# NixOS configuration
+environment.systemPackages = [ nur.repos.x71c9.tempesta ];
+
+# Home Manager
 home.packages = [ pkgs.nur.repos.x71c9.tempesta ];
 ```
+
+The NUR package includes configurable shell completion support. See [NUR documentation](https://github.com/x71c9/nur-packages/blob/master/pkgs/tempesta/README.md) for completion configuration options.
 
 ---
 
