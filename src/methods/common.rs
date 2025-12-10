@@ -145,8 +145,18 @@ fn push_to_origin() {
   if config.remote.is_none() {
     return;
   }
-  println!("Pushing changes to remote origin...");
-  git_command(&["push", "-u", "--all"], "Cannot push to origin");
+  if config.pull_before_push.is_some().eq(&true) {
+    println!("Pulling most recent changes & pushing changes to remote...");
+    if config.rebase_on_pull.is_some().eq(&true) {
+      git_command(&["pull", "--rebase"], "Cannot pull & rebase from remote");
+    } else {
+      git_command(&["pull", "--ff"], "Cannot pull & fast-forward from remote");
+    }
+    git_command(&["push", "-u", "--all"], "Cannot push to remote");
+  } else {
+    println!("Pushing changes to remote origin...");
+    git_command(&["push", "-u", "--all"], "Cannot push to remote");
+  }
 }
 
 pub fn git_commit(comment: &str) {

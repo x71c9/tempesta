@@ -10,17 +10,25 @@ use std::path::PathBuf;
 #[derive(Serialize, Deserialize)]
 pub struct Config {
   pub git: bool,
+  pub pull_before_push: Option<bool>,
+  pub rebase_on_pull: Option<bool>,
   pub remote: Option<String>,
   pub dir: String,
 }
 
 pub fn run() {
   let config = load_config();
-  println!("Git enabled: {}", config.git);
+  println!("Git enabled:              {}", config.git);
   if let Some(remote) = &config.remote {
-    println!("Remote: {}", remote);
+    println!("Remote:                   {}", remote);
   } else {
     println!("Remote: None");
+  }
+  if let Some(pull_before_push) = &config.pull_before_push {
+    println!("Pull before push enabled: {}", pull_before_push);
+  }
+  if let Some(rebase_on_pull) = &config.rebase_on_pull {
+    println!("Rebase on pull enabled:   {}", rebase_on_pull);
   }
   println!("Bookmark store directory: {}", config.dir);
 }
