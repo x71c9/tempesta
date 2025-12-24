@@ -275,3 +275,80 @@ jobs:
           git commit -m "tempesta: ${version}"
           git push origin main
           echo "✓ Changes committed and pushed successfully"
+  update-aur-bin:
+    name: Update AUR Binary Package
+    needs: release
+    runs-on: ubuntu-latest
+    container:
+      image: archlinux:latest
+    steps:
+      - name: Install dependencies
+        run: |
+          pacman -Syu --noconfirm base-devel coreutils curl git openssh sudo
+      - name: Setup SSH
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.AUR_SECRET_KEY }}" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          ssh-keyscan -t rsa,ecdsa,ed25519 aur.archlinux.org >> ~/.ssh/known_hosts
+      - name: Checkout AUR Repository
+        run: |
+          GIT_SSH_COMMAND="ssh -i ~/.ssh/id_ed25519 -o IdentitiesOnly=yes -o StrictHostKeyChecking=no" \
+            git clone ssh://aur@aur.archlinux.org/tempesta-bin.git aur-tempesta-bin
+      - name: Create non-root build user
+        run: |
+          useradd -m builduser
+          echo "builduser ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers
+          chown -R builduser:builduser aur-tempesta-bin
+          mkdir -p /home/builduser/.ssh
+          cp ~/.ssh/id_ed25519 /home/builduser/.ssh/id_ed25519
+          chown -R builduser:builduser /home/builduser/.ssh
+          chmod 600 /home/builduser/.ssh/id_ed25519
+      - name: Update PKGBUILD and Push to AUR
+        run: |
+          sudo -E -H -u builduser bash <<'SCRIPT'
+          cd aur-tempesta-bin
+          version=${GITHUB_REF_NAME#v}
+          
+          # Download binaries to calculate checksums
+          curl -OL https://github.com/x71c9/tempesta/releases/download/v${version}/tempesta-x86_64-unknown-linux-gnu.tar.gz
+          curl -OL https://github.com/x71c9/tempesta/releases/download/v${version}/tempesta-aarch64-unknown-linux-gnu.tar.gz
+          
+          sha256sum_x86_64=$(sha256sum tempesta-x86_64-unknown-linux-gnu.tar.gz | awk '{print $1}')
+          sha256sum_aarch64=$(sha256sum tempesta-aarch64-unknown-linux-gnu.tar.gz | awk '{print $1}')
+          
+          cat > PKGBUILD <<EOF
+          pkgname=tempesta-bin
+          pkgver=${version}
+          pkgrel=1
+          pkgdesc="The fastest and lightest bookmark manager CLI written in Rust (binary package)"
+          arch=('x86_64' 'aarch64')
+          url="https://github.com/x71c9/tempesta"
+          license=('MIT')
+          depends=('glibc')
+          provides=('tempesta')
+          conflicts=('tempesta')
+
+          source_x86_64=("tempesta-x86_64-\$pkgver.tar.gz::https://github.com/x71c9/tempesta/releases/download/v\$pkgver/tempesta-x86_64-unknown-linux-gnu.tar.gz")
+          source_aarch64=("tempesta-aarch64-\$pkgver.tar.gz::https://github.com/x71c9/tempesta/releases/download/v\$pkgver/tempesta-aarch64-unknown-linux-gnu.tar.gz")
+          
+          sha256sums_x86_64=("${sha256sum_x86_64}")
+          sha256sums_aarch64=("${sha256sum_aarch64}")
+
+          package() {
+            if [[ \$CARCH == "x86_64" ]]; then
+              tar -xzf "tempesta-x86_64-\$pkgver.tar.gz"
+            elif [[ \$CARCH == "aarch64" ]]; then
+              tar -xzf "tempesta-aarch64-\$pkgver.tar.gz"
+            fi
+            install -Dm755 tempesta "\$pkgdir/usr/bin/tempesta"
+          }
+          EOF
+          
+          makepkg --printsrcinfo > .SRCINFO
+          git config user.email "mail@x71c9.com"
+          git config user.name "x71c9"
+          git add PKGBUILD .SRCINFO
+          git commit -m "chore(release): release ${version}"
+          GIT_SSH_COMMAND="ssh -i ~/.ssh/id_ed25519 -o IdentitiesOnly=yes -o StrictHostKeyChecking=no" git push origin master
+          SCRIPT
