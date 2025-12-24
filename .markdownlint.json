@@ -1,0 +1,8 @@
+{
+  "line-length": {
+    "code_blocks": false,
+    "headings": false,
+    "line_length": 128,
+    "strict": true
+  },
+}

@@ -46,7 +46,7 @@ Combine
 
 ## How to use it
 
-#### Init
+### Init
 
 Before start using it, run:
 
@@ -71,7 +71,16 @@ If the `--config` flag is not provided, Tempesta will check for the `TEMPESTA_CO
 
 The `--config` flag takes precedence over the `TEMPESTA_CONFIG` environment variable. If neither is provided, Tempesta defaults to `~/.config/tempesta/tempesta.toml`.
 
-#### Add a bookmark
+Available configuration options are documented in the table below:
+| Option           | Type   | Explanation    |
+| ---------------- | -------| -------------- |
+| git              | bool   | Set to `true` to enable git backend for storing bookmarks |
+| pull_before_push | bool   | Requires the `git` backend enabled, used to pull remote before any push to update |
+| rebase_on_pull   | bool   | Requires `git` & `rebase_on_pull` enabled, use rebase instead of fast-forward strategy for git pull  |
+| remote           | string | Git https/git url for repository to store bookmarks. |
+| dir              | string | Directory path in local filesystem for bookmark-store |
+
+### Add a bookmark
 
 ```bash
 tempesta add <local-path> <url>

@@ -26,6 +26,8 @@ pub fn run() {
   let use_git = !matches!(input.trim().to_lowercase().as_str(), "n" | "no");
   let config = Config {
     git: use_git,
+    pull_before_push: Some(false),
+    rebase_on_pull: Some(false),
     remote: None,
     dir: storage_path,
   };
@@ -116,6 +118,8 @@ fn handle_git(previous_config: &Config) {
 
   let config = Config {
     git: true,
+    pull_before_push: Some(false),
+    rebase_on_pull: Some(false),
     remote: git_remote,
     dir: previous_config.dir.clone(),
   };
