@@ -27,6 +27,11 @@ fn test_setup(name: &str) -> (String, String) {
   let test_bookmark_dir_path = get_test_bookmark_dir_path(&home_str, name);
   println!("config: {}", test_config_file_path);
   println!("store: {}", test_bookmark_dir_path);
+
+  // Create parent directories if they don't exist
+  if let Some(parent) = PathBuf::from(&test_config_file_path).parent() {
+    fs::create_dir_all(parent).expect("Failed to create config directory");
+  }
   Command::cargo_bin("tempesta")
     .unwrap()
     .arg("init")
@@ -58,6 +63,12 @@ fn tempesta_init() {
     format!("{}/.config/tempesta/test-tempesta-{}.toml", &home_str, name);
   let test_bookmark_dir_path =
     format!("{}/.test-bookmark-store-{}/", &home_str, name);
+
+  // Create parent directories if they don't exist
+  if let Some(parent) = PathBuf::from(&test_config_file_path).parent() {
+    fs::create_dir_all(parent).expect("Failed to create config directory");
+  }
+
   let output = format!(
     concat!(
       "Where do you want to store the bookmarks? [~/.bookmark-store]: ",
@@ -189,20 +200,12 @@ fn tempesta_list() {
     .assert()
     .success();
   let output_list_bookmark = format!(
-    concat!(
-      "{} :: {}\n",
-      "{} :: {}\n"
-    ),
-    bookmark_path_a, bookmark_url_a,
-    bookmark_path_b, bookmark_url_b
+    concat!("{} :: {}\n", "{} :: {}\n"),
+    bookmark_path_a, bookmark_url_a, bookmark_path_b, bookmark_url_b
   );
   Command::cargo_bin("tempesta")
     .unwrap()
-    .args([
-      "list",
-      "--config",
-      &test_config_file_path,
-    ])
+    .args(["list", "--config", &test_config_file_path])
     .assert()
     .success()
     .stdout(output_list_bookmark);
