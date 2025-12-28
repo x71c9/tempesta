@@ -37,6 +37,13 @@ jobs:
           COMMIT_MSG=$(git log -1 --pretty=format:"%s")
           echo "Latest commit message: $COMMIT_MSG"
           
+          # Skip if this is a release commit (to prevent infinite loops)
+          if echo "$COMMIT_MSG" | grep -qE "^(chore\(release\)|release).*v[0-9]+\.[0-9]+\.[0-9]+"; then
+            echo "Release commit detected, skipping to prevent infinite loop"
+            echo "should_release=false" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+          
           BUMP_TYPE="patch"  # default
           
           # Check for breaking changes (MAJOR)
