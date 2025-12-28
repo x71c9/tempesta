@@ -28,8 +28,9 @@ How to use it:
 
 Install
 
-- [MacOS (Homebrew)](#macos-homebrew)
+- [NixOS/Nix (NUR)](#nixosnix-aur)
 - [Arch Linux (AUR)](#arch-linux-aur)
+- [MacOS (Homebrew)](#macos-homebrew)
 - [Download binaries](#download-binaries)
 - [Build from source](#build-from-source)
 - [Shell completion](#shell-completion)
@@ -201,22 +202,6 @@ tempesta r search-engines/google
 
 ## Install
 
-### MacOS (Homebrew)
-
-```bash
-brew install x71c9/x71c9/tempesta
-```
-
----
-
-### Arch Linux (AUR)
-
-```bash
-yay -S tempesta
-```
-
----
-
 ### NixOS/Nix (NUR)
 
 ```bash
@@ -231,6 +216,20 @@ home.packages = [ pkgs.nur.repos.x71c9.tempesta ];
 ```
 
 The NUR package includes configurable shell completion support. See [NUR documentation](https://github.com/x71c9/nur-packages/blob/master/pkgs/tempesta/README.md) for completion configuration options.
+
+### Arch Linux (AUR)
+
+```bash
+yay -S tempesta
+```
+
+---
+
+### MacOS (Homebrew)
+
+```bash
+brew install x71c9/x71c9/tempesta
+```
 
 ---
 

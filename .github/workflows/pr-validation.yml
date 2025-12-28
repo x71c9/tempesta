@@ -1,0 +1,58 @@
+---
+name: PR Validation
+on:
+  pull_request:
+    branches: [master]
+    types: [opened, synchronize, edited]
+permissions:
+  contents: read
+  pull-requests: write
+jobs:
+  validate-pr-title:
+    name: Validate PR Title (Future Squash Commit)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Validate PR title
+        run: |
+          PR_TITLE="${{ github.event.pull_request.title }}"
+          echo "Validating PR title: $PR_TITLE"
+          
+          # Check if PR title follows conventional commit format
+          if echo "$PR_TITLE" | grep -qE "^(feat|fix|docs|style|refactor|perf|test|chore|security)(\(.+\))?\!?:.+"; then
+            echo "PR title follows conventional commit format"
+            echo "This will become the squash commit message"
+          else
+            echo "PR title must follow conventional commit format"
+            echo ""
+            echo "Current title: $PR_TITLE"
+            echo ""
+            echo "Valid formats:"
+            echo "- feat: add new feature"
+            echo "- fix: resolve bug"
+            echo "- feat!: breaking change"
+            echo "- fix(scope): specific fix"
+            echo ""
+            echo "Types: feat, fix, docs, style, refactor, perf, test, chore, security"
+            echo ""
+            echo "The PR title will become the commit message when squashed"
+            exit 1
+          fi
+          
+  run-tests:
+    name: Run Tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+        
+      - name: Run tests
+        run: cargo test
+        
+      - name: Check formatting
+        run: cargo fmt -- --check
+        
+      - name: Run clippy
+        run: cargo clippy -- -D warnings

@@ -1,0 +1,68 @@
+---
+name: Auto Release on Master Merge
+on:
+  push:
+    branches:
+      - master
+permissions:
+  contents: write
+jobs:
+  auto-release:
+    name: Determine Version and Release
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # Need full history to analyze commits
+          
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+        
+      - name: Install cargo-release
+        run: cargo install cargo-release
+        
+      - name: Configure Git
+        run: |
+          git config user.name "x71c9"
+          git config user.email "108585118+x71c9@users.noreply.github.com"
+          
+      - name: Get latest commit message
+        id: commit
+        run: |
+          # Get the latest commit message (should be the squashed PR commit)
+          COMMIT_MSG=$(git log -1 --pretty=format:"%s")
+          echo "Latest commit message: $COMMIT_MSG"
+          echo "commit_message=$COMMIT_MSG" >> $GITHUB_OUTPUT
+          
+      - name: Determine version bump type
+        id: version
+        run: |
+          COMMIT_MSG="${{ steps.commit.outputs.commit_message }}"
+          BUMP_TYPE="patch"  # default
+          
+          # Check for breaking changes (MAJOR)
+          if echo "$COMMIT_MSG" | grep -qE "^(feat|fix|perf|docs|style|refactor|test|chore)!:" || \
+             echo "$COMMIT_MSG" | grep -q "BREAKING CHANGE:"; then
+            BUMP_TYPE="major"
+          # Check for new features (MINOR)
+          elif echo "$COMMIT_MSG" | grep -qE "^feat:"; then
+            BUMP_TYPE="minor"
+          # Check for fixes/improvements (PATCH)
+          elif echo "$COMMIT_MSG" | grep -qE "^(fix|perf|security):"; then
+            BUMP_TYPE="patch"
+          else
+            # For non-conventional commits, default to patch
+            echo "Non-conventional commit detected, defaulting to patch"
+            BUMP_TYPE="patch"
+          fi
+          
+          echo "Determined version bump type: $BUMP_TYPE"
+          echo "bump_type=$BUMP_TYPE" >> $GITHUB_OUTPUT
+          
+      - name: Run cargo release
+        run: |
+          echo "Running cargo release ${{ steps.version.outputs.bump_type }}"
+          cargo release ${{ steps.version.outputs.bump_type }} --execute --no-confirm
+        env:
+          CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
