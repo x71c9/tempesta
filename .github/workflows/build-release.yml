@@ -7,8 +7,6 @@ on:
         required: true
         type: string
     secrets:
-      GITHUB_TOKEN:
-        required: true
       HOMEBREW_PAT:
         required: true
       AUR_SECRET_KEY:
@@ -95,7 +93,7 @@ jobs:
         with:
           tag_name: ${{ inputs.version }}
           files: bin/**
-          token: ${{ secrets.GITHUB_TOKEN }}
+          token: ${{ github.token }}
           draft: false
           prerelease: false
       - name: Trigger Homebrew Tap Update
