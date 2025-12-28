@@ -1,0 +1,74 @@
+---
+name: Release on Master Merge
+on:
+  push:
+    branches:
+      - master
+permissions:
+  contents: write
+jobs:
+  auto-release:
+    name: Auto Release
+    runs-on: ubuntu-latest
+    outputs:
+      new_version: ${{ steps.release.outputs.new_version }}
+      should_release: ${{ steps.release.outputs.should_release }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+        
+      - name: Install cargo-release
+        run: cargo install cargo-release
+        
+      - name: Configure Git
+        run: |
+          git config user.name "x71c9"
+          git config user.email "108585118+x71c9@users.noreply.github.com"
+          
+      - name: Determine version and release
+        id: release
+        run: |
+          COMMIT_MSG=$(git log -1 --pretty=format:"%s")
+          echo "Latest commit message: $COMMIT_MSG"
+          
+          BUMP_TYPE="patch"  # default
+          
+          # Check for breaking changes (MAJOR)
+          if echo "$COMMIT_MSG" | grep -qE "^(feat|fix|perf|docs|style|refactor|test|chore)!:" || \
+             echo "$COMMIT_MSG" | grep -q "BREAKING CHANGE:"; then
+            BUMP_TYPE="major"
+          # Check for new features (MINOR)
+          elif echo "$COMMIT_MSG" | grep -qE "^feat:"; then
+            BUMP_TYPE="minor"
+          # Check for fixes/improvements (PATCH)
+          elif echo "$COMMIT_MSG" | grep -qE "^(fix|perf|security|docs|style|refactor|test|chore):"; then
+            BUMP_TYPE="patch"
+          else
+            echo "Non-conventional commit detected, defaulting to patch"
+            BUMP_TYPE="patch"
+          fi
+          
+          echo "Determined version bump type: $BUMP_TYPE"
+          echo "Running cargo release $BUMP_TYPE"
+          cargo release $BUMP_TYPE --execute --no-confirm
+          
+          NEW_VERSION=$(grep '^version = ' Cargo.toml | sed 's/version = "\(.*\)"/\1/')
+          echo "new_version=v$NEW_VERSION" >> $GITHUB_OUTPUT
+          echo "should_release=true" >> $GITHUB_OUTPUT
+          echo "New version: v$NEW_VERSION"
+        env:
+          CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
+
+  trigger-build-and-release:
+    name: Trigger Build and Release
+    needs: auto-release
+    if: needs.auto-release.outputs.should_release == 'true'
+    uses: ./.github/workflows/build-release.yml
+    with:
+      version: ${{ needs.auto-release.outputs.new_version }}
+    secrets: inherit

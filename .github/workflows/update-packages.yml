@@ -1,0 +1,219 @@
+---
+name: Update Package Repositories
+on:
+  workflow_call:
+    inputs:
+      version:
+        required: true
+        type: string
+    secrets:
+      AUR_SECRET_KEY:
+        required: true
+      NUR_PAT:
+        required: true
+jobs:
+  update-aur:
+    name: Update AUR
+    runs-on: ubuntu-latest
+    container:
+      image: archlinux:latest
+    steps:
+      - name: Install dependencies
+        run: |
+          pacman -Syu --noconfirm base-devel coreutils curl git openssh sudo
+      - name: Setup SSH
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.AUR_SECRET_KEY }}" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          ssh-keyscan -t rsa,ecdsa,ed25519 aur.archlinux.org >> ~/.ssh/known_hosts
+      - name: Checkout AUR Repository
+        run: |
+          GIT_SSH_COMMAND="ssh -i ~/.ssh/id_ed25519 -o IdentitiesOnly=yes -o StrictHostKeyChecking=no" \
+            git clone ssh://aur@aur.archlinux.org/tempesta.git aur-tempesta
+      - name: Create non-root build user
+        run: |
+          useradd -m builduser
+          echo "builduser ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers
+          chown -R builduser:builduser aur-tempesta
+          mkdir -p /home/builduser/.ssh
+          cp ~/.ssh/id_ed25519 /home/builduser/.ssh/id_ed25519
+          chown -R builduser:builduser /home/builduser/.ssh
+          chmod 600 /home/builduser/.ssh/id_ed25519
+      - name: Update PKGBUILD and Push to AUR
+        run: |
+          sudo -E -H -u builduser bash <<'SCRIPT'
+          cd aur-tempesta
+          version=${{ inputs.version }}
+          version=${version#v}
+          curl -OL https://codeload.github.com/x71c9/tempesta/tar.gz/refs/tags/v${version}
+          sha256sum=$(sha256sum v${version} | awk '{print $1}')
+          cat > PKGBUILD <<EOF
+          pkgname=tempesta
+          pkgver=${version}
+          pkgrel=1
+          pkgdesc="The fastest and lightest bookmark manager CLI written in Rust"
+          arch=('x86_64' 'aarch64')
+          url="https://github.com/x71c9/tempesta"
+          license=('MIT')
+          depends=('glibc')
+          makedepends=('rust')
+
+          source=("\$pkgname-\$pkgver.tar.gz::https://codeload.github.com/x71c9/\$pkgname/tar.gz/refs/tags/v\$pkgver")
+          sha256sums=("${sha256sum}")
+
+          prepare() {
+            cd "\$pkgname-\$pkgver"
+            export RUSTUP_TOOLCHAIN=stable
+            cargo fetch --locked --target "\$(rustc -vV | sed -n 's/host: //p')"
+          }
+
+          build() {
+            cd "\$pkgname-\$pkgver"
+            export RUSTUP_TOOLCHAIN=stable
+            export CARGO_TARGET_DIR=target
+            cargo build --frozen --release --all-features
+          } 
+          package() {
+            cd "\$pkgname-\$pkgver"
+            install -Dm0755 -t "\$pkgdir/usr/bin/" "target/release/\$pkgname"
+          }
+          EOF
+          makepkg --printsrcinfo > .SRCINFO
+          git config user.email "mail@x71c9.com"
+          git config user.name "x71c9"
+          git add .
+          git commit -m "chore(release): release ${version}"
+          GIT_SSH_COMMAND="ssh -i ~/.ssh/id_ed25519 -o IdentitiesOnly=yes -o StrictHostKeyChecking=no" git push origin master
+          SCRIPT
+
+  update-aur-bin:
+    name: Update AUR Binary Package
+    runs-on: ubuntu-latest
+    container:
+      image: archlinux:latest
+    steps:
+      - name: Install dependencies
+        run: |
+          pacman -Syu --noconfirm base-devel coreutils curl git openssh sudo
+      - name: Setup SSH
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.AUR_SECRET_KEY }}" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          ssh-keyscan -t rsa,ecdsa,ed25519 aur.archlinux.org >> ~/.ssh/known_hosts
+      - name: Checkout AUR Repository
+        run: |
+          GIT_SSH_COMMAND="ssh -i ~/.ssh/id_ed25519 -o IdentitiesOnly=yes -o StrictHostKeyChecking=no" \
+            git clone ssh://aur@aur.archlinux.org/tempesta-bin.git aur-tempesta-bin
+      - name: Create non-root build user
+        run: |
+          useradd -m builduser
+          echo "builduser ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers
+          chown -R builduser:builduser aur-tempesta-bin
+          mkdir -p /home/builduser/.ssh
+          cp ~/.ssh/id_ed25519 /home/builduser/.ssh/id_ed25519
+          chown -R builduser:builduser /home/builduser/.ssh
+          chmod 600 /home/builduser/.ssh/id_ed25519
+      - name: Update PKGBUILD and Push to AUR
+        run: |
+          sudo -E -H -u builduser bash <<'SCRIPT'
+          cd aur-tempesta-bin
+          version=${{ inputs.version }}
+          version=${version#v}
+          
+          curl -OL https://github.com/x71c9/tempesta/releases/download/v${version}/tempesta-x86_64-unknown-linux-gnu.tar.gz
+          curl -OL https://github.com/x71c9/tempesta/releases/download/v${version}/tempesta-aarch64-unknown-linux-gnu.tar.gz
+          
+          sha256sum_x86_64=$(sha256sum tempesta-x86_64-unknown-linux-gnu.tar.gz | awk '{print $1}')
+          sha256sum_aarch64=$(sha256sum tempesta-aarch64-unknown-linux-gnu.tar.gz | awk '{print $1}')
+          
+          cat > PKGBUILD <<EOF
+          pkgname=tempesta-bin
+          pkgver=${version}
+          pkgrel=1
+          pkgdesc="The fastest and lightest bookmark manager CLI written in Rust (binary package)"
+          arch=('x86_64' 'aarch64')
+          url="https://github.com/x71c9/tempesta"
+          license=('MIT')
+          depends=('glibc')
+          provides=('tempesta')
+          conflicts=('tempesta')
+
+          source_x86_64=("tempesta-x86_64-\$pkgver.tar.gz::https://github.com/x71c9/tempesta/releases/download/v\$pkgver/tempesta-x86_64-unknown-linux-gnu.tar.gz")
+          source_aarch64=("tempesta-aarch64-\$pkgver.tar.gz::https://github.com/x71c9/tempesta/releases/download/v\$pkgver/tempesta-aarch64-unknown-linux-gnu.tar.gz")
+          
+          sha256sums_x86_64=("${sha256sum_x86_64}")
+          sha256sums_aarch64=("${sha256sum_aarch64}")
+
+          package() {
+            if [[ \$CARCH == "x86_64" ]]; then
+              tar -xzf "tempesta-x86_64-\$pkgver.tar.gz"
+            elif [[ \$CARCH == "aarch64" ]]; then
+              tar -xzf "tempesta-aarch64-\$pkgver.tar.gz"
+            fi
+            install -Dm755 tempesta "\$pkgdir/usr/bin/tempesta"
+          }
+          EOF
+          
+          makepkg --printsrcinfo > .SRCINFO
+          git config user.email "mail@x71c9.com"
+          git config user.name "x71c9"
+          git add PKGBUILD .SRCINFO
+          git commit -m "chore(release): release ${version}"
+          GIT_SSH_COMMAND="ssh -i ~/.ssh/id_ed25519 -o IdentitiesOnly=yes -o StrictHostKeyChecking=no" git push origin master
+          SCRIPT
+
+  update-nur:
+    name: Update NUR
+    runs-on: ubuntu-latest
+    steps:
+      - name: Install Nix
+        uses: cachix/install-nix-action@v25
+      - name: Checkout tempesta repository
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.version }}
+      - name: Checkout NUR packages repository
+        uses: actions/checkout@v4
+        with:
+          repository: x71c9/nur-packages
+          token: ${{ secrets.NUR_PAT }}
+          path: nur-packages
+      - name: Update tempesta package
+        run: |
+          cd nur-packages
+          version=${{ inputs.version }}
+          version=${version#v}
+          
+          echo "Updating tempesta to version ${version}"
+          sed -i "s/version = \"[^\"]*\"/version = \"${version}\"/" pkgs/tempesta/default.nix
+          echo "Updated version to ${version}"
+          
+          echo "Calculating source hash..."
+          base32_hash=$(nix-prefetch-url --unpack "https://github.com/x71c9/tempesta/archive/refs/tags/v${version}.tar.gz")
+          new_hash=$(nix-hash --type sha256 --to-sri "$base32_hash")
+          sed -i "s|hash = \"[^\"]*\"|hash = \"${new_hash}\"|" pkgs/tempesta/default.nix
+          echo "Updated source hash to ${new_hash}"
+          
+          sed -i "s|cargoHash = \"[^\"]*\"|cargoHash = \"sha256-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=\"|" pkgs/tempesta/default.nix
+          
+          set +e
+          timeout 300s nix-build -E "with import (builtins.fetchTarball https://github.com/NixOS/nixpkgs/archive/nixos-unstable.tar.gz) {}; callPackage ./pkgs/tempesta/default.nix {}" 2>/tmp/build_error >/dev/null
+          build_result=$?
+          set -e
+          
+          if [[ $build_result -ne 0 ]]; then
+            if grep -q "got:" /tmp/build_error && grep -q "vendor" /tmp/build_error; then
+              correct_cargo_hash=$(grep "got:" /tmp/build_error | grep "sha256-" | tail -1 | sed 's/.*got:[[:space:]]*\(sha256-[A-Za-z0-9+/=]*\).*/\1/')
+              sed -i "s|cargoHash = \"[^\"]*\"|cargoHash = \"${correct_cargo_hash}\"|" pkgs/tempesta/default.nix
+              echo "Updated cargoHash to ${correct_cargo_hash}"
+            fi
+          fi
+          
+          git config user.email "108585118+x71c9@users.noreply.github.com"
+          git config user.name "x71c9"
+          git add pkgs/tempesta/default.nix
+          git commit -m "tempesta: ${version}"
+          git push origin main
+          echo "Changes committed and pushed successfully"
