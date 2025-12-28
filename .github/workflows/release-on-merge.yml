@@ -1,7 +1,8 @@
 ---
-name: Release on Master Merge
+name: Release on PR Merge
 on:
-  push:
+  pull_request:
+    types: [closed]
     branches:
       - master
 permissions:
@@ -10,8 +11,8 @@ jobs:
   auto-release:
     name: Auto Release
     runs-on: ubuntu-latest
-    # Skip workflow for release commits to prevent infinite loops
-    if: "!contains(github.event.head_commit.message, 'chore(release): release v')"
+    # Only run if the PR was actually merged (not just closed)
+    if: github.event.pull_request.merged == true
     outputs:
       new_version: ${{ steps.release.outputs.new_version }}
       should_release: ${{ steps.release.outputs.should_release }}
@@ -36,15 +37,9 @@ jobs:
       - name: Determine version and release
         id: release
         run: |
-          COMMIT_MSG=$(git log -1 --pretty=format:"%s")
-          echo "Latest commit message: $COMMIT_MSG"
-          
-          # Skip if this is a release commit (to prevent infinite loops)
-          if echo "$COMMIT_MSG" | grep -qE "^(chore\(release\)|release).*v[0-9]+\.[0-9]+\.[0-9]+"; then
-            echo "Release commit detected, skipping to prevent infinite loop"
-            echo "should_release=false" >> $GITHUB_OUTPUT
-            exit 0
-          fi
+          # Use PR title for conventional commit analysis
+          COMMIT_MSG="${{ github.event.pull_request.title }}"
+          echo "PR title: $COMMIT_MSG"
           
           BUMP_TYPE="patch"  # default
           
