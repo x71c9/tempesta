@@ -5,6 +5,11 @@ use std::path::PathBuf;
 
 use super::methods::config::Config;
 
+#[allow(deprecated)]
+fn cargo_bin() -> Result<Command, Box<dyn std::error::Error>> {
+  Ok(Command::cargo_bin("tempesta")?)
+}
+
 fn get_home() -> String {
   let home_path =
     PathBuf::from(env::var("HOME").expect("HOME environment variable not set"));
@@ -32,7 +37,7 @@ fn test_setup(name: &str) -> (String, String) {
   if let Some(parent) = PathBuf::from(&test_config_file_path).parent() {
     fs::create_dir_all(parent).expect("Failed to create config directory");
   }
-  Command::cargo_bin("tempesta")
+  cargo_bin()
     .unwrap()
     .arg("init")
     .args(["--config", &test_config_file_path])
@@ -77,7 +82,7 @@ fn tempesta_init() {
     ),
     &test_config_file_path
   );
-  Command::cargo_bin("tempesta")
+  cargo_bin()
     .unwrap()
     .arg("init")
     .args(["--config", &test_config_file_path])
@@ -117,7 +122,7 @@ fn tempesta_add() {
     ),
     &test_bookmark_dir_path
   );
-  Command::cargo_bin("tempesta")
+  cargo_bin()
     .unwrap()
     .args([
       "add",
@@ -140,7 +145,7 @@ fn tempesta_add() {
     ),
     &test_bookmark_dir_path, &test_bookmark_dir_path
   );
-  Command::cargo_bin("tempesta")
+  cargo_bin()
     .unwrap()
     .args([
       "add",
@@ -175,7 +180,7 @@ fn tempesta_list() {
   let bookmark_path_b = "test/test-list-b";
   let bookmark_url_a = "https://test-list.local.a";
   let bookmark_url_b = "https://test-list.local.b";
-  Command::cargo_bin("tempesta")
+  cargo_bin()
     .unwrap()
     .args([
       "add",
@@ -187,7 +192,7 @@ fn tempesta_list() {
     ])
     .assert()
     .success();
-  Command::cargo_bin("tempesta")
+  cargo_bin()
     .unwrap()
     .args([
       "add",
@@ -203,7 +208,7 @@ fn tempesta_list() {
     concat!("{} :: {}\n", "{} :: {}\n"),
     bookmark_path_a, bookmark_url_a, bookmark_path_b, bookmark_url_b
   );
-  Command::cargo_bin("tempesta")
+  cargo_bin()
     .unwrap()
     .args(["list", "--config", &test_config_file_path])
     .assert()
@@ -216,7 +221,7 @@ fn tempesta_list() {
 fn tempesta_move() {
   let name = "move";
   let (test_config_file_path, test_bookmark_dir_path) = test_setup(name);
-  Command::cargo_bin("tempesta")
+  cargo_bin()
     .unwrap()
     .args([
       "add",
@@ -229,7 +234,7 @@ fn tempesta_move() {
     .assert()
     .success();
   // Add a bookmark at the destination to trigger the overwrite prompt
-  Command::cargo_bin("tempesta")
+  cargo_bin()
     .unwrap()
     .args([
       "add",
@@ -249,7 +254,7 @@ fn tempesta_move() {
     ),
     &test_bookmark_dir_path
   );
-  Command::cargo_bin("tempesta")
+  cargo_bin()
     .unwrap()
     .args([
       "move",
@@ -274,7 +279,7 @@ fn tempesta_open() {
 fn tempesta_remove() {
   let name = "remove";
   let (test_config_file_path, _test_bookmakr_dir_path) = test_setup(name); // Fixed unused variable
-  Command::cargo_bin("tempesta")
+  cargo_bin()
     .unwrap()
     .args([
       "add",
@@ -288,7 +293,7 @@ fn tempesta_remove() {
     .success();
   // remove (removing the last entry in the bookmark-store-test removes it completely)
   let output_remove = "Bookmark removed successfully as move/test\n";
-  Command::cargo_bin("tempesta")
+  cargo_bin()
     .unwrap()
     .args(["remove", "move/test", "--config", &test_config_file_path])
     .assert()
@@ -302,7 +307,7 @@ fn tempesta_update() {
   let name = "update";
   let (test_config_file_path, test_bookmark_dir_path) = test_setup(name);
   let bookmark_path = "test/test-update";
-  Command::cargo_bin("tempesta")
+  cargo_bin()
     .unwrap()
     .args([
       "add",
@@ -322,7 +327,7 @@ fn tempesta_update() {
     &test_bookmark_dir_path, bookmark_path, bookmark_path
   );
   let new_url = "http://test-update.new";
-  Command::cargo_bin("tempesta")
+  cargo_bin()
     .unwrap()
     .args([
       "update",
@@ -336,7 +341,7 @@ fn tempesta_update() {
     .success()
     .stdout(output_update_bookmark);
   let get_output = format!("{}\n", new_url);
-  Command::cargo_bin("tempesta")
+  cargo_bin()
     .unwrap()
     .args(["get", bookmark_path, "--config", &test_config_file_path])
     .assert()
