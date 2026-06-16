@@ -1,0 +1,58 @@
+#!/usr/bin/env bash
+#
+# Pre-commit hook: enforce Rust formatting so the PR Validation "Check
+# formatting" step (cargo fmt -- --check) never fails in CI.
+#
+# Checks only the staged .rs files (via rustfmt --check, using the repo's
+# rustfmt.toml), so an unrelated unformatted file elsewhere won't block your
+# commit.
+#
+# If anything is unformatted the commit is aborted and the files are listed.
+# Run `cargo fmt` and re-stage, then commit again.
+# Set SKIP_FMT=1 to bypass (e.g. SKIP_FMT=1 git commit ...).
+
+set -euo pipefail
+
+[ "${SKIP_FMT:-0}" = "1" ] && exit 0
+
+# Only consider staged Rust files (added/copied/modified).
+mapfile -t rs_files < <(git diff --cached --name-only --diff-filter=ACM -- '*.rs')
+[ "${#rs_files[@]}" -eq 0 ] && exit 0
+
+if ! command -v rustfmt >/dev/null 2>&1; then
+  echo "pre-commit: rustfmt not found in PATH; skipping fmt check" >&2
+  exit 0
+fi
+
+repo_root="$(git rev-parse --show-toplevel)"
+config_arg=()
+[ -f "${repo_root}/rustfmt.toml" ] && config_arg=(--config-path "${repo_root}/rustfmt.toml")
+
+tmpdir="$(mktemp -d)"
+trap 'rm -rf "$tmpdir"' EXIT
+
+unformatted=()
+for f in "${rs_files[@]}"; do
+  # Check the STAGED content (not the working tree), so the hook reflects
+  # exactly what would be committed. `git show :f` reads the index blob.
+  # rustfmt's exit code only signals "would change" in file mode (stdin mode
+  # always exits 0), so we materialize the staged blob to a temp .rs file.
+  # That temp file lives outside the repo, so point rustfmt at rustfmt.toml
+  # explicitly or it would fall back to default formatting rules.
+  tmpfile="${tmpdir}/check.rs"
+  git show ":$f" > "$tmpfile"
+  if ! rustfmt "${config_arg[@]}" --check "$tmpfile" >/dev/null 2>&1; then
+    unformatted+=("$f")
+  fi
+done
+
+if [ "${#unformatted[@]}" -gt 0 ]; then
+  echo "pre-commit: the following staged files are not formatted:" >&2
+  for f in "${unformatted[@]}"; do echo "  - $f" >&2; done
+  echo >&2
+  echo "Run 'cargo fmt' and re-stage your changes, then commit again." >&2
+  echo "(bypass with SKIP_FMT=1 git commit ...)" >&2
+  exit 1
+fi
+
+exit 0
