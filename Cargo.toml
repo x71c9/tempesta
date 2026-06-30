@@ -1,7 +1,7 @@
 [package]
 name = "tempesta"
 version = "0.1.37"
-authors = ["Andrea Reni <mail@x71c9.com>"]
+authors = ["x71c9 <mail@x71c9.com>"]
 edition = "2021"
 description = "The lightest and fastest CLI for managing bookmarks, written in Rust"
 repository = "https://github.com/x71c9/tempesta"
