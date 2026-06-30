@@ -12,7 +12,16 @@
 
 set -euo pipefail
 
-REPO="${REPO:-x71c9/tempesta}"
+# Infer repo from git remote if not set explicitly
+_git_repo() {
+  git remote get-url origin 2>/dev/null \
+    | sed -E 's|.*github\.com[:/]||' | sed 's|\.git$||'
+}
+REPO="${REPO:-$(_git_repo)}"
+if [[ -z "$REPO" ]]; then
+  echo "error: could not infer repo from git remote. Set REPO=owner/name explicitly." >&2
+  exit 1
+fi
 BRANCH="${BRANCH:-master}"
 
 # Toggles (override via env):
