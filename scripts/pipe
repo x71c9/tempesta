@@ -1,0 +1,14 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+echo "==> cargo fmt"
+cargo fmt
+
+echo "==> cargo clippy"
+cargo clippy -- -D warnings
+
+echo "==> cargo test"
+cargo test
+
+echo "==> cargo build"
+cargo build

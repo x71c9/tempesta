@@ -9,7 +9,7 @@ pkgs.mkShell {
   ];
   shellHook = ''
     export PATH="$PWD/scripts:$PATH"
-    bash scripts/fetch-rebase.sh
+    bash scripts/fetch-rebase
     echo "cargo: $(cargo -V) | rustc: $(rustc -V)"
     echo "rustfmt: $(rustfmt --version) | clippy: $(cargo clippy --version)"
   '';

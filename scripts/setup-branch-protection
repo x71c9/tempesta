@@ -32,8 +32,8 @@ ENFORCE_ADMINS="${ENFORCE_ADMINS:-false}"
 
 # Required status checks. Must match job `name:` values in pr-validation.yml.
 CONTEXTS=(
-  "Run Tests"
-  "Validate PR Title (Future Squash Commit)"
+  "validate / Run Tests"
+  "validate / Validate PR Title (Future Squash Commit)"
 )
 
 echo "Configuring branch protection for ${REPO}@${BRANCH}"

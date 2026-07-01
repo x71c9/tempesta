@@ -1,0 +1,86 @@
+#!/usr/bin/env bash
+#
+# Run after cloning from the template. Idempotent — safe to run multiple times.
+# Substitutes PKGCRATE / PKGBIN placeholders, installs git hooks, creates the
+# develop branch, sets the CI_DISPATCH_TOKEN secret, and configures branch protection.
+#
+# Usage:
+#   bash scripts/install <crate-name> [binary-name]
+#
+# When crate name and binary name are the same (most projects):
+#   bash scripts/install mytool
+#
+# When they differ (e.g. crate published as "mytool-rust", binary is "mytool"):
+#   bash scripts/install mytool-rust mytool
+
+set -uo pipefail
+
+if [[ $# -lt 1 || $# -gt 2 ]]; then
+  echo "usage: bash scripts/install <crate-name> [binary-name]" >&2
+  exit 1
+fi
+
+PKGCRATE="$1"
+PKGBIN="${2:-$1}"
+
+repo_root="$(git rev-parse --show-toplevel)"
+cd "$repo_root"
+
+ok()   { echo "  [ok] $*"; }
+skip() { echo "  [--] $*"; }
+fail() { echo "  [!!] $*" >&2; }
+
+echo
+echo "==> substitute placeholders (PKGCRATE=${PKGCRATE}, PKGBIN=${PKGBIN})"
+mapfile -t files < <(grep -rl "PKGCRATE\|PKGBIN" . \
+  --exclude-dir=.git \
+  --exclude-dir=target \
+  --exclude="$(basename "$0")" 2>/dev/null || true)
+
+if [[ ${#files[@]} -eq 0 ]]; then
+  skip "no placeholder files found (already substituted?)"
+else
+  for f in "${files[@]}"; do
+    sed -i "s/PKGCRATE/${PKGCRATE}/g; s/PKGBIN/${PKGBIN}/g" "$f"
+    ok "updated $f"
+  done
+fi
+
+echo
+echo "==> install git hooks"
+hooks_dir="${repo_root}/scripts/hooks"
+chmod +x "${hooks_dir}"/* 2>/dev/null || true
+git -C "${repo_root}" config core.hooksPath scripts/hooks
+ok "core.hooksPath set to scripts/hooks"
+
+echo
+echo "==> create branch develop"
+if git -C "${repo_root}" show-ref --verify --quiet refs/heads/develop; then
+  skip "branch develop already exists"
+  git -C "${repo_root}" checkout develop
+  ok "checked out develop"
+else
+  git -C "${repo_root}" checkout -b develop
+  ok "created and checked out develop"
+fi
+
+echo
+echo "==> set CI_DISPATCH_TOKEN secret on x71c9/${PKGBIN}"
+if pass github.com/github@x71c9.com/personal_access_token/CI_DISPATCH_TOKEN \
+    | gh secret set CI_DISPATCH_TOKEN --repo "x71c9/${PKGBIN}"; then
+  ok "CI_DISPATCH_TOKEN set"
+else
+  fail "failed to set CI_DISPATCH_TOKEN (is the repo created on GitHub?)"
+fi
+
+echo
+echo "==> configure branch protection"
+if bash "${repo_root}/scripts/setup-branch-protection"; then
+  ok "branch protection applied"
+else
+  fail "setup-branch-protection failed"
+fi
+
+echo
+echo "Done. Crate: ${PKGCRATE}, binary: ${PKGBIN}"
+echo "Next step: fill in pkgdesc (and any extra deps) in ci.toml"
