@@ -1,6 +1,6 @@
 [package]
 name = "tempesta"
-version = "0.1.39"
+version = "0.1.40"
 authors = ["x71c9 <mail@x71c9.com>"]
 edition = "2021"
 description = "The lightest and fastest CLI for managing bookmarks, written in Rust"
