@@ -1,3 +1,9 @@
 crate_name  = "tempesta"
 binary_name = "tempesta"
 pkgdesc     = "The fastest and lightest bookmark manager CLI written in Rust"
+
+# Shell completions: `tempesta completion <bash|zsh|fish>`
+has_shell_completions = "true"
+
+# Extra command names installed as symlinks to the binary by every package
+bin_aliases = "t tmps"

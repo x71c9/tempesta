@@ -164,7 +164,29 @@ fn tempesta_add() {
 
 #[test]
 fn tempesta_completion() {
-  // TODO
+  // Each script must register the binary and its aliases (t, tmps)
+  let cases = [
+    ("bash", "complete -F _tempesta tempesta t tmps"),
+    ("zsh", "compdef _tempesta tempesta t tmps"),
+    ("fish", "for bin in tempesta t tmps"),
+  ];
+  for (shell, expected) in cases {
+    let output = cargo_bin()
+      .unwrap()
+      .args(["completion", shell])
+      .assert()
+      .success()
+      .get_output()
+      .stdout
+      .clone();
+    let script = String::from_utf8(output).expect("completion output is utf8");
+    assert!(
+      script.contains(expected),
+      "{} completion script does not contain `{}`",
+      shell,
+      expected
+    );
+  }
 }
 
 #[test]
