@@ -15,7 +15,7 @@ pub fn run(args: Vec<String>) {
   let toml_file_path = common::get_bookmark_file_path(relative_path);
   if toml_file_path.exists() {
     fs::remove_file(&toml_file_path).panic_on_error("Failed to remove file");
-    println!("Bookmark removed successfully as {}", &relative_path);
+    println!("Bookmark removed successfully as {}", relative_path);
     let mut parent_dir = toml_file_path.parent();
     while let Some(dir) = parent_dir {
       if fs::remove_dir(dir).is_ok() {
@@ -24,7 +24,7 @@ pub fn run(args: Vec<String>) {
         break;
       }
     }
-    let comment = format!("Remove bookmark {}", &relative_path);
+    let comment = format!("Remove bookmark {}", relative_path);
     common::git_commit(&comment);
     return;
   }

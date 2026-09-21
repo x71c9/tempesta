@@ -39,9 +39,9 @@ pub fn run(args: Vec<String>) {
     .and_then(|m| m.modified())
     .ok();
   if metadata_before != metadata_after {
-    let comment = format!("Edit bookmark {}", &toml_file_path.display());
+    let comment = format!("Edit bookmark {}", toml_file_path.display());
     common::git_commit(&comment);
-    println!("Bookmark edited successfully as {}", &relative_path);
+    println!("Bookmark edited successfully as {}", relative_path);
   } else {
     println!("No changes made.");
   }
