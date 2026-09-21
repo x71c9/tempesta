@@ -34,7 +34,7 @@ pub fn run(args: Vec<String>) {
   let formatted = bookmarks.iter().map(|path| {
     let mut current_path = common::get_bookmark_store_dir_path();
     current_path.push(PathBuf::from(path));
-    let full_path = format!("{}.toml", &current_path.display());
+    let full_path = format!("{}.toml", current_path.display());
     let url =
       extract_url_from_toml(&full_path).unwrap_or_else(|_| "N/A".to_string());
     format!("{}{}{}", path, divisor, url)

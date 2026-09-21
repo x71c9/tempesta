@@ -42,5 +42,6 @@ _tempesta_complete_entries_helper() {
       | sort
 }
 
-complete -F _tempesta tempesta
+# Register for the binary and its aliases
+complete -F _tempesta tempesta t tmps
 

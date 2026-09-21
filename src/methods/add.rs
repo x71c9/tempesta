@@ -41,7 +41,7 @@ pub fn run(args: Vec<String>) {
   common::validate_url(url);
   let tags = &args[4..].to_vec();
   common::store_bookmark(&toml_file_path, url, tags);
-  let comment = format!("Add bookmark {}", &relative_path);
+  let comment = format!("Add bookmark {}", relative_path);
   common::git_commit(&comment);
-  println!("Bookmark added successfully as {}", &relative_path);
+  println!("Bookmark added successfully as {}", relative_path);
 }

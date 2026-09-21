@@ -20,7 +20,7 @@ pub fn run(args: Vec<String>) {
 
   let toml_from_file_path = common::get_bookmark_file_path(relative_path_from);
   if !toml_from_file_path.exists() {
-    eprintln!("Path {:?} do not exists", &toml_from_file_path.to_str());
+    eprintln!("Path {:?} do not exists", toml_from_file_path.to_str());
     std::process::exit(1);
   }
 
@@ -56,13 +56,13 @@ pub fn run(args: Vec<String>) {
 
   let comment = format!(
     "Move bookmark from {} to {}",
-    &relative_path_from, &relative_path_to
+    relative_path_from, relative_path_to
   );
   common::git_commit(&comment);
 
   println!(
     "Bookmark moved successfully from {} to {}",
-    &relative_path_from, &relative_path_to
+    relative_path_from, relative_path_to
   );
 }
 
