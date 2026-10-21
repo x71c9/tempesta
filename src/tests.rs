@@ -371,3 +371,135 @@ fn tempesta_update() {
     .stdout(get_output);
   test_cleanup(name);
 }
+
+fn native_message(json: &str) -> Vec<u8> {
+  let mut message = (json.len() as u32).to_ne_bytes().to_vec();
+  message.extend_from_slice(json.as_bytes());
+  message
+}
+
+fn native_request(
+  config_file_path: &str,
+  args: &[&str],
+  json: &str,
+) -> serde_json::Value {
+  let output = cargo_bin()
+    .unwrap()
+    .args(args)
+    .args(["--config", config_file_path])
+    .write_stdin(native_message(json))
+    .assert()
+    .success()
+    .get_output()
+    .stdout
+    .clone();
+  let length = u32::from_ne_bytes(output[..4].try_into().unwrap()) as usize;
+  assert_eq!(output.len(), 4 + length, "stdout must be a single message");
+  serde_json::from_slice(&output[4..]).expect("response is json")
+}
+
+#[test]
+fn tempesta_native_host() {
+  let name = "native-host";
+  let (test_config_file_path, test_bookmark_dir_path) = test_setup(name);
+  let host = ["native-host"];
+  cargo_bin()
+    .unwrap()
+    .args([
+      "add",
+      "test/tagged",
+      "https://test-tagged.local",
+      "keep-me",
+      "--config",
+      &test_config_file_path,
+    ])
+    .assert()
+    .success();
+  // add
+  let response = native_request(
+    &test_config_file_path,
+    &host,
+    r#"{"action":"add","path":"test/new","url":"https://test-new.local"}"#,
+  );
+  assert_eq!(response, serde_json::json!({ "ok": true }));
+  // add on an existing path without overwrite
+  let response = native_request(
+    &test_config_file_path,
+    &host,
+    r#"{"action":"add","path":"test/tagged","url":"https://other.local"}"#,
+  );
+  assert_eq!(
+    response,
+    serde_json::json!({ "ok": false, "code": "exists" })
+  );
+  // overwrite keeps the existing tags
+  let response = native_request(
+    &test_config_file_path,
+    &host,
+    r#"{"action":"add","path":"test/tagged","url":"https://other.local","overwrite":true}"#,
+  );
+  assert_eq!(response, serde_json::json!({ "ok": true }));
+  // list, launched the way Chromium and Firefox do
+  let expected = serde_json::json!({
+    "ok": true,
+    "bookmarks": [
+      { "path": "test/new", "url": "https://test-new.local", "tags": [] },
+      { "path": "test/tagged", "url": "https://other.local", "tags": ["keep-me"] },
+    ],
+  });
+  for args in [
+    vec!["chrome-extension://mmghkkaaciolnpicbbmdhieeginfpkmf/"],
+    vec![
+      "/hosts/com.x71c9.tempesta.json",
+      "tempesta-browser-extension@x71c9.com",
+    ],
+  ] {
+    let response =
+      native_request(&test_config_file_path, &args, r#"{"action":"list"}"#);
+    assert_eq!(response, expected);
+  }
+  // invalid requests become error responses
+  for json in [
+    r#"{"action":"add","path":"../escape","url":"https://test.local"}"#,
+    r#"{"action":"add","path":"with space","url":"https://test.local"}"#,
+    r#"{"action":"add","path":"test/bad-url","url":"not-a-url"}"#,
+    r#"{"action":"unknown"}"#,
+  ] {
+    let response = native_request(&test_config_file_path, &host, json);
+    assert_eq!(response["ok"], false, "{}", json);
+    assert_eq!(response["code"], "error", "{}", json);
+  }
+  assert!(!PathBuf::from(&test_bookmark_dir_path)
+    .join("../escape.toml")
+    .exists());
+  test_cleanup(name);
+}
+
+#[test]
+fn tempesta_native_host_install_print() {
+  let output = cargo_bin()
+    .unwrap()
+    .args([
+      "native-host",
+      "install",
+      "--browser",
+      "firefox",
+      "--path",
+      "/bin/tempesta",
+      "--print",
+    ])
+    .assert()
+    .success()
+    .get_output()
+    .stdout
+    .clone();
+  let manifest: serde_json::Value =
+    serde_json::from_slice(&output).expect("manifest is json");
+  assert_eq!(manifest["name"], "com.x71c9.tempesta");
+  assert_eq!(manifest["path"], "/bin/tempesta");
+  assert_eq!(manifest["type"], "stdio");
+  assert_eq!(
+    manifest["allowed_extensions"],
+    serde_json::json!(["tempesta-browser-extension@x71c9.com"])
+  );
+}

@@ -18,6 +18,9 @@ _tempesta () {
           "1:source:_tempesta_complete_entries_helper" \
           "2:destination:_tempesta_complete_entries_helper"
         ;;
+      native-host)
+        _arguments : "1:command:(install)"
+        ;;
       *)
         ;;
     esac
@@ -28,6 +31,7 @@ _tempesta () {
       "edit:[e] Edit an existing bookmark"
       "list:[l] List bookmarks"
       "move:[m] Move an existing bookmark"
+      "native-host:Browser native messaging host"
       "open:[o] Open a bookmark"
       "remove:[r] Remove a bookmark"
       "update:[u] Update an existing bookmark"

@@ -43,6 +43,12 @@ fn main() {
       .expect("Failed to set config file path");
   }
 
+  // Launched by a browser as native messaging host
+  if methods::native_host::is_browser_invocation(&processed_args) {
+    methods::native_host::serve();
+    std::process::exit(0);
+  }
+
   // Now use processed_args for command dispatch
   if processed_args.len() < 2 {
     eprintln!("Usage: tempesta <command> [options]");
@@ -58,6 +64,7 @@ fn main() {
     "init" | "i" => methods::init::run(),
     "list" | "l" | "ls" => methods::list::run(processed_args),
     "move" | "m" | "mv" => methods::r#move::run(processed_args),
+    "native-host" => methods::native_host::run(processed_args),
     "open" | "o" => methods::open::run(processed_args),
     "remove" | "r" | "rm" => methods::remove::run(processed_args),
     "update" | "u" => methods::update::run(processed_args),
@@ -99,6 +106,7 @@ fn print_help() {
   println!("    init, i         Initialize configuration");
   println!("    list, l, ls     List all bookmarks");
   println!("    move, m, mv     Move/rename a bookmark");
+  println!("    native-host     Browser native messaging host (install)");
   println!("    open, o         Open a bookmark in browser");
   println!("    remove, r, rm   Remove a bookmark");
   println!("    update, u       Update a bookmark");

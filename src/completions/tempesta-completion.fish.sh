@@ -30,6 +30,8 @@ for bin in tempesta t tmps
     complete -c $bin -n '__fish_use_subcommand' -a "edit" -d "Edit a bookmark"
     complete -c $bin -n '__fish_use_subcommand' -a "list" -d "List bookmarks"
     complete -c $bin -n '__fish_use_subcommand' -a "move" -d "Move a bookmark"
+    complete -c $bin -n '__fish_use_subcommand' -a "native-host" -d "Browser native messaging host"
+    complete -c $bin -n "__fish_seen_subcommand_from native-host" -a "install" -d "Register the host for the browsers"
     complete -c $bin -n '__fish_use_subcommand' -a "open" -d "Open a bookmark"
     complete -c $bin -n '__fish_use_subcommand' -a "remove" -d "Remove a bookmark"
     complete -c $bin -n '__fish_use_subcommand' -a "update" -d "Update a bookmark"
