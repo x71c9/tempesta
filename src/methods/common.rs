@@ -3,11 +3,24 @@ use serde::{Deserialize, Serialize};
 use std::fs;
 use std::path::PathBuf;
 use std::process::Command;
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::OnceLock;
 
 use super::config;
 
 pub static CONFIG_FILE_PATH: OnceLock<PathBuf> = OnceLock::new();
+
+// When running as a browser native messaging host stdout carries the protocol,
+// so informational messages are redirected to stderr
+pub static NATIVE_HOST: AtomicBool = AtomicBool::new(false);
+
+pub fn info(msg: &str) {
+  if NATIVE_HOST.load(Ordering::Relaxed) {
+    eprintln!("{}", msg);
+  } else {
+    println!("{}", msg);
+  }
+}
 
 #[derive(Serialize, Deserialize)]
 pub struct Bookmark {
@@ -137,7 +150,10 @@ pub fn store_bookmark(toml_file_path: &PathBuf, url: &str, tags: &[String]) {
     toml::to_string(&bookmark).panic_on_error("Failed to serialize bookmark");
   fs::write(toml_file_path, toml_content)
     .panic_on_error("Failed to write bookmark file");
-  println!("Bookmark file stored at {}", toml_file_path.display())
+  info(&format!(
+    "Bookmark file stored at {}",
+    toml_file_path.display()
+  ))
 }
 
 fn push_to_origin() {
@@ -146,7 +162,7 @@ fn push_to_origin() {
     return;
   }
   if config.pull_before_push.is_some().eq(&true) {
-    println!("Pulling most recent changes & pushing changes to remote...");
+    info("Pulling most recent changes & pushing changes to remote...");
     if config.rebase_on_pull.is_some().eq(&true) {
       git_command(&["pull", "--rebase"], "Cannot pull & rebase from remote");
     } else {
@@ -154,7 +170,7 @@ fn push_to_origin() {
     }
     git_command(&["push", "-u", "--all"], "Cannot push to remote");
   } else {
-    println!("Pushing changes to remote origin...");
+    info("Pushing changes to remote origin...");
     git_command(&["push", "-u", "--all"], "Cannot push to remote");
   }
 }
