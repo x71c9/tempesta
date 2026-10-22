@@ -2,10 +2,12 @@
 // Print configuration values
 // ****************************************************************************
 
-use super::common::PanicOnError;
+use super::common::{self, PanicOnError};
 use serde::{Deserialize, Serialize};
 use std::fs;
+use std::io;
 use std::path::PathBuf;
+use std::sync::atomic::Ordering;
 
 #[derive(Serialize, Deserialize)]
 pub struct Config {
@@ -35,11 +37,36 @@ pub fn run() {
 
 pub fn load_config() -> Config {
   let config_file_path = get_config_file_path();
-  let content = fs::read_to_string(&config_file_path)
-    .panic_on_error("Cannot read config file");
-  let config: Config =
-    toml::from_str(&content).panic_on_error("Cannot read toml config file");
-  config
+  let content = match fs::read_to_string(&config_file_path) {
+    Ok(content) => content,
+    Err(e) if e.kind() == io::ErrorKind::NotFound => config_error(&format!(
+      "Config file not found: {}\nRun `tempesta init` to set it up.",
+      config_file_path.display()
+    )),
+    Err(e) => config_error(&format!(
+      "Cannot read config file {}: {}",
+      config_file_path.display(),
+      e
+    )),
+  };
+  match toml::from_str(&content) {
+    Ok(config) => config,
+    Err(e) => config_error(&format!(
+      "Invalid config file {}: {}\nRun `tempesta init` to set it up again.",
+      config_file_path.display(),
+      e.message()
+    )),
+  }
+}
+
+// The native messaging host turns panics into error responses for the
+// browser, everywhere else the message is printed and tempesta exits
+fn config_error(message: &str) -> ! {
+  if common::NATIVE_HOST.load(Ordering::Relaxed) {
+    panic!("{}", message);
+  }
+  eprintln!("{}", message);
+  std::process::exit(1);
 }
 
 pub fn get_config_file_path() -> PathBuf {
