@@ -17,34 +17,50 @@ _tempesta() {
 
     # Handle second argument for all commands
     if [[ $COMP_CWORD -eq 2 ]]; then
-        cur="${COMP_WORDS[2]}"
-        COMPREPLY=( $( compgen -W "$(_tempesta_complete_entries_helper)" -- "$cur" ) )
+        _tempesta_complete_entries "${COMP_WORDS[2]}"
         return 0
     fi
 
     if [[ $COMP_CWORD -eq 4 && ( $subcmd == 'move' || $subcmd == 'm' ) ]]; then
-        cur="${COMP_WORDS[4]}"
-        COMPREPLY=( $( compgen -W "$(_tempesta_complete_entries_helper)" -- "$cur" ) )
+        _tempesta_complete_entries "${COMP_WORDS[4]}"
         return 0
+    fi
+}
+
+# Complete one path level at a time: subdirectories (with a trailing slash)
+# and bookmarks (without the .toml extension) directly under the typed path.
+_tempesta_complete_entries() {
+    local cur="$1"
+    local prefix="$(_get_bookmark_directory)"
+    prefix=$(eval echo $prefix)
+    prefix="${prefix%/}/"
+
+    local IFS=$'\n'
+    local items=( $(compgen -f -- "$prefix$cur") )
+    local item has_dir=0
+    COMPREPLY=()
+    for item in "${items[@]}"; do
+        # Skip hidden entries such as .git and .gpg-id
+        [[ $item =~ /\.[^/]*$ ]] && continue
+        if [[ -d $item ]]; then
+            COMPREPLY+=( "${item#$prefix}/" )
+            has_dir=1
+        elif [[ $item == *.toml ]]; then
+            item="${item%.toml}"
+            COMPREPLY+=( "${item#$prefix}" )
+        fi
+    done
+
+    # Add a trailing space only for a single bookmark match, so that a
+    # directory can be completed further
+    if [[ ${#COMPREPLY[@]} -gt 1 || $has_dir -eq 1 ]]; then
+        compopt -o nospace
     fi
 }
 
 # Function to get the bookmark directory from the `tempesta config` command
 _get_bookmark_directory() {
   tempesta config | awk -F': ' '/Bookmark store directory:/ {print $2}' | xargs
-}
-
-_tempesta_complete_entries_helper() {
-    # local prefix="${BOOKMARK_STORE_DIR:-$HOME/.bookmark-store}"
-    # Set the prefix dynamically
-    local prefix="$(_get_bookmark_directory)"
-    local prefix=$(eval echo $prefix)
-
-    # Find all *.toml files (ignoring .git and .gpg-id), remove the store prefix and the .toml extension,
-    # escape backslashes and colons, and sort the list.
-    find -L "$prefix" \( -name .git -o -name .gpg-id \) -prune -o -type f -name "*.toml" -print 2>/dev/null \
-      | sed -e "s#${prefix}/\{0,1\}##" -e 's#\.toml$##' -e 's#\\#\\\\#g' -e 's#:#\\:#g' \
-      | sort
 }
 
 # Register for the binary and its aliases
