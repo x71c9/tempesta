@@ -62,7 +62,8 @@ Upon merge to master:
 2. Determines semantic version increment based on commit type
 3. Executes `cargo release` with appropriate version bump
 4. Creates git tag triggering release pipeline
-5. Updates package distribution channels
+5. Generates release notes from the conventional commits since the previous release (`feat`, `fix`, `perf`, breaking changes)
+6. Updates package distribution channels
 
 ## Issue Reporting
 
