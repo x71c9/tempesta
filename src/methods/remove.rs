@@ -32,7 +32,7 @@ pub fn run(args: Vec<String>) {
   given_path.push(relative_path);
   if !given_path.is_dir() {
     eprintln!("Bookmark not found: {}", toml_file_path.display());
-    return;
+    std::process::exit(1);
   }
   let prompt_message = format!(
     "Bookmark not found as a file, but '{}' is a directory. \

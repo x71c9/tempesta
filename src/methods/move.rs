@@ -20,6 +20,12 @@ pub fn run(args: Vec<String>) {
 
   let toml_from_file_path = common::get_bookmark_file_path(relative_path_from);
   if !toml_from_file_path.exists() {
+    let mut dir_from_path = common::get_bookmark_store_dir_path();
+    dir_from_path.push(relative_path_from);
+    if dir_from_path.is_dir() {
+      move_directory(&dir_from_path, relative_path_from, relative_path_to);
+      return;
+    }
     eprintln!("Path {:?} do not exists", toml_from_file_path.to_str());
     std::process::exit(1);
   }
@@ -64,6 +70,86 @@ pub fn run(args: Vec<String>) {
     "Bookmark moved successfully from {} to {}",
     relative_path_from, relative_path_to
   );
+}
+
+fn move_directory(
+  dir_from_path: &Path,
+  relative_path_from: &str,
+  relative_path_to: &str,
+) {
+  let store_dir_path = common::get_bookmark_store_dir_path();
+  let canonical_store = store_dir_path
+    .canonicalize()
+    .panic_on_error("Failed to resolve bookmark store");
+  let canonical_from = dir_from_path
+    .canonicalize()
+    .panic_on_error("Failed to resolve source directory");
+  if canonical_from == canonical_store {
+    eprintln!("Cannot move the bookmark store root");
+    std::process::exit(1);
+  }
+
+  // Like `mv`: a trailing slash or an existing directory means "move into"
+  let mut dir_to_path = canonical_store.join(relative_path_to);
+  if relative_path_to.ends_with('/') || dir_to_path.is_dir() {
+    let dir_name = canonical_from.file_name().unwrap();
+    dir_to_path.push(dir_name);
+  }
+  if dir_to_path.starts_with(&canonical_from) {
+    eprintln!("Cannot move a directory into itself");
+    std::process::exit(1);
+  }
+
+  if dir_to_path.exists() {
+    merge_directory(&canonical_from, &dir_to_path);
+    // Fails when bookmarks were kept, which leaves the directory in place
+    let _ = fs::remove_dir(&canonical_from);
+  } else {
+    if let Some(parent) = dir_to_path.parent() {
+      fs::create_dir_all(parent)
+        .panic_on_error("Failed to create destination directory");
+    }
+    fs::rename(&canonical_from, &dir_to_path)
+      .panic_on_error("Failed to move directory");
+  }
+
+  // After successful move, cleanup empty parent directories
+  if let Some(parent) = canonical_from.parent() {
+    cleanup_empty_parents(parent)
+      .panic_on_error("Warning: Failed to clean up empty directories")
+  }
+
+  let comment = format!(
+    "Move directory from {} to {}",
+    relative_path_from, relative_path_to
+  );
+  common::git_commit(&comment);
+
+  println!(
+    "Directory moved successfully from {} to {}",
+    relative_path_from, relative_path_to
+  );
+}
+
+/// Moves every entry of `from` into `to`, asking before overwriting an
+/// existing bookmark. Entries that are not overwritten stay in `from`.
+fn merge_directory(from: &Path, to: &Path) {
+  fs::create_dir_all(to)
+    .panic_on_error("Failed to create destination directory");
+  let entries =
+    fs::read_dir(from).panic_on_error("Failed to read source directory");
+  for entry in entries.filter_map(|e| e.ok()) {
+    let source = entry.path();
+    let destination = to.join(entry.file_name());
+    if source.is_dir() {
+      merge_directory(&source, &destination);
+      // Fails when bookmarks were kept, which leaves the directory in place
+      let _ = fs::remove_dir(&source);
+    } else if !destination.exists() || prompt_for_overwrite(&destination) {
+      fs::rename(&source, &destination)
+        .panic_on_error("Failed to move bookmark file");
+    }
+  }
 }
 
 fn prompt_for_overwrite(destination: &Path) -> bool {
