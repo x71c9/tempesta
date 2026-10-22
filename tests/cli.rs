@@ -82,11 +82,17 @@ impl TestEnv {
       .env_remove("EDITOR");
   }
 
-  fn cmd(&self) -> Command {
+  /// Command relying on the default config path inside the test HOME
+  fn bare_cmd(&self) -> Command {
     let mut cmd = std::process::Command::new(env!("CARGO_BIN_EXE_tempesta"));
     self.apply_env(&mut cmd);
-    cmd.args(["--config", &self.config_str()]);
     Command::from_std(cmd)
+  }
+
+  fn cmd(&self) -> Command {
+    let mut cmd = self.bare_cmd();
+    cmd.args(["--config", &self.config_str()]);
+    cmd
   }
 
   fn run(&self, args: &[&str]) -> assert_cmd::assert::Assert {
@@ -275,6 +281,56 @@ fn tempesta_config() {
     env.store_str()
   );
   env.run(&["config"]).success().stdout(output);
+}
+
+#[test]
+fn tempesta_config_missing() {
+  let env = TestEnv::new("config-missing");
+  let expected = format!(
+    "Config file not found: {}\nRun `tempesta init` to set it up.\n",
+    env.config_str()
+  );
+  // explicit --config and the default path
+  for command in ["list", "get", "add", "config"] {
+    env
+      .run(&[command, "a", "https://a.local"])
+      .failure()
+      .code(1)
+      .stderr(expected.clone());
+  }
+  env
+    .bare_cmd()
+    .arg("list")
+    .assert()
+    .failure()
+    .code(1)
+    .stderr(expected);
+}
+
+#[test]
+fn tempesta_config_invalid() {
+  let env = TestEnv::new("config-invalid");
+  fs::write(&env.config, "git = false\n").unwrap();
+  env.run(&["list"]).failure().code(1).stderr(format!(
+    "Invalid config file {}: missing field `dir`\nRun `tempesta init` to set it up again.\n",
+    env.config_str()
+  ));
+  fs::write(&env.config, "git = \n").unwrap();
+  let stderr = String::from_utf8(
+    env
+      .run(&["list"])
+      .failure()
+      .code(1)
+      .get_output()
+      .stderr
+      .clone(),
+  )
+  .unwrap();
+  assert!(
+    stderr.starts_with(&format!("Invalid config file {}: ", env.config_str()))
+  );
+  assert!(stderr.ends_with("Run `tempesta init` to set it up again.\n"));
+  assert!(!stderr.contains("panicked"));
 }
 
 #[test]
@@ -819,6 +875,22 @@ fn tempesta_native_host() {
     assert_eq!(response["code"], "error", "{}", json);
   }
   assert!(!env.root.join("escape.toml").exists());
+}
+
+#[test]
+fn tempesta_native_host_config_missing() {
+  // The browser receives the error instead of a closed connection
+  let env = TestEnv::new("native-host-config-missing");
+  let response = native_request(&env, &["native-host"], r#"{"action":"list"}"#);
+  assert_eq!(response["ok"], false);
+  assert_eq!(response["code"], "error");
+  assert_eq!(
+    response["message"],
+    format!(
+      "Config file not found: {}\nRun `tempesta init` to set it up.",
+      env.config_str()
+    )
+  );
 }
 
 #[test]
