@@ -5,7 +5,6 @@ pkgs.mkShell {
     pkgs.rustc
     pkgs.rustfmt
     pkgs.clippy
-    pkgs.cargo-release
   ];
   shellHook = ''
     export PATH="$PWD/scripts:$PATH"
