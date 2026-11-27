@@ -403,6 +403,12 @@ fn tempesta_get() {
     .stdout("https://get.local\n");
   env.run(&["get", "dir/missing"]).failure();
   env.run(&["get"]).failure();
+  // a missing bookmark is an error message, and reading creates no directory
+  env
+    .run(&["get", "does/not/exist"])
+    .code(1)
+    .stderr("Bookmark not found: does/not/exist\n");
+  assert!(!env.exists("does"));
 }
 
 #[test]

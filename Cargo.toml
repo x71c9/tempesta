@@ -3,6 +3,7 @@ name = "tempesta"
 version = "0.4.5"
 authors = ["x71c9 <mail@x71c9.com>"]
 edition = "2021"
+rust-version = "1.83"
 description = "The lightest and fastest CLI for managing bookmarks, written in Rust"
 repository = "https://github.com/x71c9/tempesta"
 license = "MIT"

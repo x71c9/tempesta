@@ -134,9 +134,9 @@ pub fn get_bookmark_file_path(relative_path: &String) -> PathBuf {
     .parent()
     .map(|p| p.to_path_buf())
     .unwrap_or_else(|| PathBuf::from("."));
+  // Only the path: readers must not leave empty directories behind, writers
+  // create the parent directory in store_bookmark
   bookmark_store_dir_path.push(parent_path);
-  fs::create_dir_all(&bookmark_store_dir_path)
-    .panic_on_error("Failed to create directory");
   bookmark_store_dir_path.push(file_name);
   bookmark_store_dir_path
 }
@@ -148,6 +148,9 @@ pub fn store_bookmark(toml_file_path: &PathBuf, url: &str, tags: &[String]) {
   };
   let toml_content =
     toml::to_string(&bookmark).panic_on_error("Failed to serialize bookmark");
+  if let Some(parent) = toml_file_path.parent() {
+    fs::create_dir_all(parent).panic_on_error("Failed to create directory");
+  }
   fs::write(toml_file_path, toml_content)
     .panic_on_error("Failed to write bookmark file");
   info(&format!(
@@ -205,6 +208,10 @@ pub fn run_command(
 
 pub fn get_url(relative_path: &String) -> String {
   let toml_file_path = get_bookmark_file_path(relative_path);
+  if !toml_file_path.is_file() {
+    eprintln!("Bookmark not found: {}", relative_path);
+    std::process::exit(1);
+  }
   let toml_content =
     fs::read_to_string(toml_file_path).panic_on_error("Failed to read TOML");
   let bookmark: Bookmark = toml::from_str(&toml_content)
